@@ -8,6 +8,7 @@ import time
 from datetime import datetime, timedelta
 import random
 import requests
+from apis_gratuitas import generar_dashboard_apis
 from newsapi import NewsApiClient
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
