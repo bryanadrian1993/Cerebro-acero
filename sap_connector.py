@@ -222,7 +222,7 @@ def sincronizar_inventario_sap():
     Se ejecutará automáticamente cada hora
     """
     
-    print("🔄 Sincronizando datos desde SAP...")
+    # Sincronizando datos desde SAP...
     
     # 1. Obtener inventario
     df_inventario = obtener_inventario_sap()
@@ -240,7 +240,7 @@ def sincronizar_inventario_sap():
     df_ventas = obtener_ventas_sap()
     df_ventas.to_csv("ventas_historico_sap.csv", index=False)
     
-    print(f"✅ Sincronización completada: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    # Sincronización completada
     
     return {
         "inventario": df_inventario,
@@ -266,14 +266,17 @@ def get_datos_empresa():
     """
     Función inteligente: Usa SAP si está configurado, sino usa simulados
     """
+    import os
+    ruta_base = os.path.dirname(os.path.abspath(__file__))
+    ruta_csv = os.path.join(ruta_base, "inventario_simulado.csv")
     
     if usar_datos_reales():
-        print("✅ Usando datos REALES de SAP")
+        # Usando datos REALES de SAP
         return sincronizar_inventario_sap()
     else:
-        print("⚠️ Modo SIMULADO - Configurar SAP en secrets.toml")
+        # Modo SIMULADO
         return {
-            "inventario": pd.read_csv("inventario_simulado.csv"),
+            "inventario": pd.read_csv(ruta_csv),
             "ordenes": obtener_ordenes_compra_sap(),
             "proveedores": obtener_proveedores_sap(),
             "ventas": obtener_ventas_sap()
@@ -283,7 +286,7 @@ def get_datos_empresa():
 if __name__ == "__main__":
     # Test de conexión
     datos = get_datos_empresa()
-    print(f"\n📊 Inventario: {len(datos['inventario'])} productos")
-    print(f"📦 Órdenes de compra: {len(datos['ordenes'])}")
-    print(f"🏭 Proveedores: {len(datos['proveedores'])}")
-    print(f"💰 Meses de ventas: {len(datos['ventas'])}")
+    print(f"\nInventario: {len(datos['inventario'])} productos")
+    print(f"Ordenes de compra: {len(datos['ordenes'])}")
+    print(f"Proveedores: {len(datos['proveedores'])}")
+    print(f"Meses de ventas: {len(datos['ventas'])}")

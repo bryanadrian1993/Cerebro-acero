@@ -31,21 +31,21 @@ def obtener_noticias_rss(max_noticias=20):
             'fuente': 'EL COMERCIO EC',
             'idioma': 'es',
             'pais': 'Ecuador',
-            'keywords_filter': ['acero', 'metal', 'hierro', 'comercio', 'aranceles', 'exportación', 'importación', 'china', 'minería', 'construcción', 'infraestructura', 'logística', 'puerto', 'guayaquil', 'quito', 'petroleo', 'obra']
+            'keywords_filter': ['acero', 'metal', 'hierro', 'comercio', 'aranceles', 'exportación', 'importación', 'china', 'minería', 'construcción', 'infraestructura', 'logística', 'puerto', 'guayaquil', 'quito', 'petroleo', 'obra', 'metro', 'refinería', 'posorja', 'licitación', 'compras', 'mtop', 'gobierno', 'proyecto', 'vial']
         },
         {
             'url': 'https://www.eluniverso.com/feed/',
             'fuente': 'EL UNIVERSO EC',
             'idioma': 'es',
             'pais': 'Ecuador',
-            'keywords_filter': ['acero', 'metal', 'comercio', 'construcción', 'infraestructura', 'puerto', 'guayaquil', 'obra', 'proyecto', 'licitación']
+            'keywords_filter': ['acero', 'metal', 'comercio', 'construcción', 'infraestructura', 'puerto', 'guayaquil', 'obra', 'proyecto', 'licitación', 'metro', 'refinería', 'petróleo', 'exportación', 'importación', 'china']
         },
         {
             'url': 'https://www.primicias.ec/feed/',
             'fuente': 'PRIMICIAS EC',
             'idioma': 'es',
             'pais': 'Ecuador',
-            'keywords_filter': ['acero', 'metal', 'comercio', 'construcción', 'infraestructura', 'economia', 'exportación', 'importación', 'obra']
+            'keywords_filter': ['acero', 'metal', 'comercio', 'construcción', 'infraestructura', 'economia', 'exportación', 'importación', 'obra', 'metro', 'refinería', 'puerto', 'proyecto', 'licitación']
         },
         # FUENTES EN ESPAÑOL (Latinoamérica)
         {

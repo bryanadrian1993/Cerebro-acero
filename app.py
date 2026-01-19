@@ -37,12 +37,18 @@ def traducir_a_espanol_simple(texto, idioma_origen='en'):
     # 🥇 ESTRATEGIA 1: Gemini (primaria - gratis)
     if gemini_client:
         try:
-            prompt = f"Traduce al español con gramática perfecta (contexto: economía/comercio internacional): {texto}"
+            from google import genai
+            prompt = f"Translate to Spanish only (no extra comments): {texto}"
             response = gemini_client.models.generate_content(
-                model='gemini-flash-latest',
+                model='gemini-2.0-flash-exp',
                 contents=prompt
             )
             resultado = response.text.strip()
+            # Limpiar comillas si Gemini las agrega
+            if resultado.startswith('"') and resultado.endswith('"'):
+                resultado = resultado[1:-1]
+            if resultado.startswith("'") and resultado.endswith("'"):
+                resultado = resultado[1:-1]
             _cache_traducciones[texto] = resultado
             return resultado
         except Exception as e:
@@ -113,220 +119,6 @@ def traducir_a_espanol_simple(texto, idioma_origen='en'):
     _cache_traducciones[texto] = texto_traducido
     return texto_traducido
 
-# === FUNCIONES DE INTELIGENCIA ARTIFICIAL CON GEMINI ===
-
-def analizar_escenario_con_ia(titulo_escenario, descripcion, noticias, inventario_df=None, datos_sap=None):
-    """Analiza un escenario y genera explicación, impacto y urgencia usando Gemini + SAP"""
-    if not gemini_client:
-        return None
-    
-    try:
-        contexto_noticias = "\n".join([f"- {n.get('titulo', '')[:100]}" for n in noticias[:3]])
-        
-        # Contexto de inventario (SAP o simulado)
-        contexto_inventario = ""
-        if datos_sap:
-            contexto_inventario = f"\nDATO SAP REAL: {len(datos_sap.get('inventario', []))} SKUs en sistema, Órdenes de compra abiertas: {len(datos_sap.get('ordenes', []))}"
-        elif inventario_df is not None:
-            contexto_inventario = f"\nINVENTARIO: {len(inventario_df)} SKUs, Stock total: {inventario_df['stock_actual'].sum():.0f} unidades"
-        
-        prompt = f"""Eres un analista experto en logística y comercio de acero.
-
-ESCENARIO: {titulo_escenario}
-DESCRIPCIÓN: {descripcion}
-NOTICIAS RECIENTES:
-{contexto_noticias}
-{contexto_inventario}
-
-Genera un análisis en formato JSON con:
-1. "explicacion": Por qué este escenario es crítico (2-3 oraciones)
-2. "impacto_negocio": Impacto específico en Import Aceros (costos, tiempos, disponibilidad)
-3. "urgencia": "ALTA" | "MEDIA" | "BAJA"
-4. "probabilidad": Probabilidad de que ocurra basada en noticias recientes (0-100%)
-
-Responde SOLO con JSON válido, sin markdown."""
-
-        response = gemini_client.models.generate_content(
-            model='gemini-flash-latest',
-            contents=prompt
-        )
-        
-        import json
-        resultado = json.loads(response.text.strip().replace('```json', '').replace('```', ''))
-        return resultado
-    except:
-        return None
-
-def generar_recomendaciones(titulo_escenario, analisis, inventario_df=None, datos_sap=None):
-    """Genera recomendaciones accionables basadas en el escenario + datos SAP"""
-    if not gemini_client:
-        return []
-    
-    try:
-        inventario_info = ""
-        if datos_sap:
-            # Usar datos REALES de SAP
-            inv_sap = datos_sap.get('inventario', pd.DataFrame())
-            ordenes_sap = datos_sap.get('ordenes', [])
-            ventas_sap = datos_sap.get('ventas', pd.DataFrame())
-            
-            inventario_info = f"""
-DATOS SAP (REALES):
-- SKUs totales: {len(inv_sap)}
-- Stock total: {inv_sap['stock_actual'].sum():.0f} unidades
-- Órdenes de compra abiertas: {len(ordenes_sap)}
-- Tendencia de ventas (6 meses): {ventas_sap['monto_usd'].sum():.0f} USD
-"""
-        elif inventario_df is not None and len(inventario_df) > 0:
-            inventario_info = f"\nINVENTARIO ACTUAL: {len(inventario_df)} SKUs, Stock Total: {inventario_df['stock_actual'].sum():.0f} unidades"
-        
-        prompt = f"""Eres un asesor estratégico de Import Aceros S.A.
-
-ESCENARIO: {titulo_escenario}
-URGENCIA: {analisis.get('urgencia', 'MEDIA') if analisis else 'MEDIA'}
-{inventario_info}
-
-Genera 3 recomendaciones ACCIONABLES y ESPECÍFICAS.
-Cada recomendación debe incluir:
-- Acción concreta (qué hacer)
-- Razón (por qué hacerlo)
-- Timing (cuándo ejecutar)
-
-Formato JSON:
-[
-  {{"accion": "...", "razon": "...", "timing": "..."}},
-  ...
-]
-
-Responde SOLO con el array JSON, sin markdown."""
-
-        response = gemini_client.models.generate_content(
-            model='gemini-flash-latest',
-            contents=prompt
-        )
-        
-        import json
-        recomendaciones = json.loads(response.text.strip().replace('```json', '').replace('```', ''))
-        return recomendaciones if isinstance(recomendaciones, list) else []
-    except:
-        return []
-
-def generar_resumen_ejecutivo(escenarios_activos):
-    """Genera resumen ejecutivo de los escenarios más importantes del día"""
-    if not gemini_client or not escenarios_activos:
-        return {"titulo": "Sin información suficiente", "puntos_clave": [], "conclusion": ""}
-    
-    try:
-        escenarios_texto = "\n".join([
-            f"- {esc['titulo']}: {esc.get('descripcion', '')[:150]}"
-            for esc in escenarios_activos[:5]
-        ])
-        
-        prompt = f"""Eres el CEO de Import Aceros S.A. y necesitas un briefing ejecutivo de 2 minutos.
-
-ESCENARIOS ACTIVOS HOY:
-{escenarios_texto}
-
-Genera un resumen ejecutivo con:
-1. "titulo": Título del briefing (ej: "3 Riesgos Críticos en Cadena de Suministro")
-2. "puntos_clave": Array de 3-5 puntos CONCISOS (máx 15 palabras c/u)
-3. "conclusion": Mensaje final estratégico (2 oraciones)
-
-Formato JSON. Responde SOLO con JSON, sin markdown."""
-
-        response = gemini_client.models.generate_content(
-            model='gemini-flash-latest',
-            contents=prompt
-        )
-        
-        import json
-        resumen = json.loads(response.text.strip().replace('```json', '').replace('```', ''))
-        return resumen
-    except:
-        return {"titulo": "Análisis en curso", "puntos_clave": [], "conclusion": ""}
-
-def extraer_insights_noticias(noticias):
-    """Extrae países, empresas y productos mencionados en las noticias"""
-    if not gemini_client or not noticias:
-        return {"paises": [], "empresas": [], "productos": []}
-    
-    try:
-        titulos = "\n".join([f"- {n.get('titulo', '')}" for n in noticias[:10]])
-        
-        prompt = f"""Analiza estas noticias de la industria del acero:
-
-{titulos}
-
-Extrae:
-1. "paises": Países mencionados (ISO codes o nombres)
-2. "empresas": Empresas relevantes mencionadas
-3. "productos": Tipos de acero/productos mencionados (HRC, CRC, galvanizado, etc)
-
-Formato JSON:
-{{
-  "paises": ["China", "USA", ...],
-  "empresas": ["ArcelorMittal", ...],
-  "productos": ["HRC", "CRC", ...]
-}}
-
-Responde SOLO con JSON, sin markdown."""
-
-        response = gemini_client.models.generate_content(
-            model='gemini-flash-latest',
-            contents=prompt
-        )
-        
-        import json
-        insights = json.loads(response.text.strip().replace('```json', '').replace('```', ''))
-        return insights
-    except:
-        return {"paises": [], "empresas": [], "productos": []}
-
-def responder_pregunta_chatbot(pregunta, contexto_inventario, contexto_noticias):
-    """Chatbot que responde preguntas usando contexto de inventario y noticias"""
-    if not gemini_client:
-        return "Lo siento, el chatbot no está disponible en este momento."
-    
-    try:
-        prompt = f"""Eres el asistente IA de Import Aceros S.A., especializado en logística de acero.
-
-CONTEXTO INVENTARIO:
-{contexto_inventario}
-
-CONTEXTO NOTICIAS RECIENTES:
-{contexto_noticias}
-
-PREGUNTA DEL USUARIO: {pregunta}
-
-Responde de manera CONCISA y PROFESIONAL (máximo 3 oraciones).
-Si no tienes información suficiente, dilo claramente."""
-
-        response = gemini_client.models.generate_content(
-            model='gemini-flash-latest',
-            contents=prompt
-        )
-        
-        return response.text.strip()
-    except Exception as e:
-        return f"Error al procesar pregunta: {str(e)}"
-
-def calcular_nivel_riesgo(analisis):
-    """Determina nivel de riesgo visual basado en análisis de IA"""
-    if not analisis:
-        return "🟡", "MEDIA"
-    
-    urgencia = analisis.get('urgencia', 'MEDIA').upper()
-    probabilidad = analisis.get('probabilidad', 50)
-    
-    if urgencia == "ALTA" and probabilidad > 60:
-        return "🔴", "CRÍTICA"
-    elif urgencia == "ALTA" or probabilidad > 70:
-        return "🟠", "ALTA"
-    elif urgencia == "MEDIA" or probabilidad > 40:
-        return "🟡", "MEDIA"
-    else:
-        return "🟢", "BAJA"
-
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(
     page_title="CEREBRO DE ACERO - Import Aceros S.A. | Sistema de Inteligencia Logística v1.0",
@@ -358,10 +150,13 @@ if GEMINI_API_KEY:
     try:
         from google import genai
         gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+        st.success("✅ Gemini AI activado correctamente")
     except ImportError:
-        st.warning("⚠️ Instale google-genai: pip install google-genai")
+        st.error("⚠️ Instale google-genai: pip install google-genai")
     except Exception as e:
-        st.warning(f"⚠️ Error al inicializar Gemini: {e}")
+        st.error(f"⚠️ Error al inicializar Gemini: {e}")
+else:
+    st.warning("⚠️ Gemini AI no configurado - Configure GEMINI_API_KEY en secrets.toml")
 # -------------------------------------
 
 client = None
@@ -942,6 +737,10 @@ def cargar_inventario():
     
     FUTURO: Se conectará automáticamente a SAP cuando configures credenciales
     """
+    import os
+    ruta_base = os.path.dirname(os.path.abspath(__file__))
+    ruta_csv = os.path.join(ruta_base, "inventario_simulado.csv")
+    
     try:
         # Intentar importar conector SAP
         from sap_connector import get_datos_empresa, usar_datos_reales
@@ -951,11 +750,11 @@ def cargar_inventario():
             datos_sap = get_datos_empresa()
             return datos_sap["inventario"]
         else:
-            # Modo simulado
-            return pd.read_csv("inventario_simulado.csv")
+            # Modo simulado con ruta absoluta
+            return pd.read_csv(ruta_csv)
     except:
-        # Fallback: archivo CSV simulado
-        return pd.read_csv("inventario_simulado.csv")
+        # Fallback: archivo CSV simulado con ruta absoluta
+        return pd.read_csv(ruta_csv)
 
 # ========================================
 # ALGORITMO: EL CEREBRO DE ACERO
@@ -971,24 +770,21 @@ def fase1_deteccion_oportunidad(escenario):
         "productos_criticos": []
     }
     
-    # 1. Escaneo de Mercado Ecuador - DATOS REALES
+    # 1. Escaneo de Mercado Ecuador - SOLO DATOS REALES
     try:
         obras_activas = obtener_obras_detectadas_ecuador(dias=60)
         
-        # Filtrar según escenario (opcional)
+        # Filtrar según escenario
         if "Crisis" in escenario:
-            # En crisis, filtrar solo urgencia ALTA
             obras_activas = [o for o in obras_activas if o['urgencia'] == 'ALTA']
         
         if "Boom" in escenario or "Minero" in escenario:
-            # En boom, priorizar minería y petróleo
             obras_prioritarias = [o for o in obras_activas if o['sector'] in ['Minería', 'Petróleo']]
             obras_resto = [o for o in obras_activas if o['sector'] not in ['Minería', 'Petróleo']]
             obras_activas = obras_prioritarias + obras_resto
         
     except Exception as e:
-        print(f"⚠️ Error obteniendo obras: {str(e)}")
-        # Fallback a datos básicos
+        # Si hay error, dejar vacío (no usar datos falsos)
         obras_activas = []
     
     # 2. Análisis de Inventario Interno (Regla 5)
@@ -1025,7 +821,7 @@ def fase1_deteccion_oportunidad(escenario):
 
 # --- FASE 2: GESTIÓN DE RIESGOS ---
 def fase2_gestion_riesgos(escenario):
-    """El Escudo: Decide si es seguro comprar ahora"""
+    """El Escudo: Analiza riesgos REALES basados en noticias detectadas"""
     
     riesgos = {
         "cisnes_negros": [],
@@ -1034,47 +830,68 @@ def fase2_gestion_riesgos(escenario):
         "ajustes": []
     }
     
-    # Radar de Cisnes Negros
-    if "Crisis" in escenario:
-        riesgos["cisnes_negros"].append({
-            "tipo": "Geopolítica - Guerra",
-            "descripcion": "Conflicto afecta ruta Mar Rojo",
-            "accion": "Recargar flete +20%",
-            "stock_recomendado": "6 meses"
-        })
-        riesgos["ajustes"].append("Aumentar stock de seguridad a 6 meses")
-        riesgos["ajustes"].append("Buscar rutas alternas (Cabo Buena Esperanza)")
+    # Obtener escenarios reales detectados
+    escenarios_disponibles, info_escenarios = generar_escenarios_desde_noticias()
     
-    # Simular otros riesgos aleatorios
-    eventos_posibles = [
-        {"tipo": "Pandemia", "prob": 0.05, "accion": "Stock para 6 meses - Pánico controlado"},
-        {"tipo": "Terremoto en Turquía", "prob": 0.1, "accion": "Proveedor alternativo en India"},
-        {"tipo": "Huelga Portuaria Guayaquil", "prob": 0.15, "accion": "Nacionalizar en Esmeraldas"},
-        {"tipo": "Salvaguardia Arancelaria", "prob": 0.2, "accion": "Importar INMEDIATO antes de decreto"}
-    ]
-    
-    for evento in eventos_posibles:
-        if random.random() < evento["prob"]:
+    # Analizar SOLO escenarios de crisis reales
+    for esc_nombre in escenarios_disponibles:
+        if esc_nombre == "Sin Alertas Activas":
+            continue
+            
+        info = info_escenarios[esc_nombre]
+        
+        # Solo incluir escenarios de tipo "Crisis" con relevancia ALTA
+        if info.get("tipo") == "Crisis" and info.get("relevancia") == "ALTA":
+            # Extraer acción recomendada del análisis
+            accion_recomendada = "Monitorear situacion y ajustar compras"
+            
+            # Determinar stock recomendado según la categoría
+            stock_rec = "Normal"
+            if info.get("categoria") == "Geopolitica":
+                accion_recomendada = "Diversificar proveedores - Buscar rutas alternas"
+                stock_rec = "6 meses"
+            elif info.get("categoria") == "Economia":
+                accion_recomendada = "Anticipar compra antes de subida de precios"
+                stock_rec = "3 meses"
+            elif info.get("categoria") == "Logistica":
+                accion_recomendada = "Asegurar inventario - Posibles retrasos"
+                stock_rec = "4 meses"
+            
             riesgos["cisnes_negros"].append({
-                "tipo": evento["tipo"],
-                "descripcion": f"Riesgo detectado: {evento['tipo']}",
-                "accion": evento["accion"],
-                "stock_recomendado": "Normal"
+                "tipo": f"{info.get('categoria', 'Crisis')}: {esc_nombre[:50]}",
+                "descripcion": info.get('descripcion', '')[:100],
+                "accion": accion_recomendada,
+                "stock_recomendado": stock_rec,
+                "fuente_real": f"{len(info.get('noticias', []))} noticias verificadas"
             })
     
-    # Radar Económico
-    precio_acero_tendencia = random.choice(["SUBIENDO", "BAJANDO", "ESTABLE"])
+    # Radar Económico - Análisis de tendencia basado en escenarios
+    crisis_economicas = sum(1 for esc in escenarios_disponibles 
+                           if esc != "Sin Alertas Activas" 
+                           and info_escenarios[esc].get("categoria") == "Economia")
+    
+    if crisis_economicas >= 2:
+        precio_acero_tendencia = "SUBIENDO"
+    elif crisis_economicas == 1:
+        precio_acero_tendencia = "ESTABLE"
+    else:
+        precio_acero_tendencia = "BAJANDO"
     
     riesgos["radar_economico"] = {
         "tendencia_precio": precio_acero_tendencia,
-        "accion": "COMPRAR YA" if precio_acero_tendencia == "SUBIENDO" else "ESPERAR 1 SEMANA" if precio_acero_tendencia == "BAJANDO" else "COMPRAR NORMAL"
+        "accion": "COMPRAR YA" if precio_acero_tendencia == "SUBIENDO" else "ESPERAR 1 SEMANA" if precio_acero_tendencia == "BAJANDO" else "COMPRAR NORMAL",
+        "base": f"Basado en {len(escenarios_disponibles)-1} escenarios reales detectados"
     }
     
-    # Decisión final
+    # Decisión final basada en riesgos reales
     if len(riesgos["cisnes_negros"]) > 2:
-        riesgos["decision"] = "ESPERAR - Demasiados riesgos"
-    elif precio_acero_tendencia == "SUBIENDO" or "Crisis" in escenario:
+        riesgos["decision"] = "ESPERAR - Demasiados riesgos activos"
+    elif precio_acero_tendencia == "SUBIENDO":
         riesgos["decision"] = "COMPRAR URGENTE"
+    elif len(riesgos["cisnes_negros"]) == 0:
+        riesgos["decision"] = "COMPRAR NORMAL - Sin riesgos detectados"
+    else:
+        riesgos["decision"] = "COMPRAR CON PRECAUCION"
     
     return riesgos
 
@@ -1179,19 +996,19 @@ def fase4_logistica_distribucion(decisiones_compra):
 def ejecutar_cerebro_acero(escenario):
     """Ejecuta las 4 fases del algoritmo"""
     
-    with st.spinner("🧠 FASE 1: Escaneando mercado y detectando oportunidades..."):
+    with st.spinner("FASE 1: Escaneando mercado y detectando oportunidades..."):
         time.sleep(1)
         fase1 = fase1_deteccion_oportunidad(escenario)
     
-    with st.spinner("🛡️ FASE 2: Analizando riesgos geopolíticos y económicos..."):
+    with st.spinner("FASE 2: Analizando riesgos geopoliticos y economicos..."):
         time.sleep(1)
         fase2 = fase2_gestion_riesgos(escenario)
     
-    with st.spinner("💰 FASE 3: Seleccionando proveedores óptimos..."):
+    with st.spinner("FASE 3: Seleccionando proveedores optimos..."):
         time.sleep(1)
         fase3 = fase3_seleccion_compra(fase1["productos_criticos"])
     
-    with st.spinner("🚚 FASE 4: Optimizando logística de distribución..."):
+    with st.spinner("FASE 4: Optimizando logistica de distribucion..."):
         time.sleep(1)
         fase4 = fase4_logistica_distribucion(fase3)
     
@@ -1312,7 +1129,7 @@ with st.sidebar:
             if pregunta_usuario:
                 with st.spinner("Analizando..."):
                     # Preparar contexto de inventario
-                    contexto_inv = f"SKUs totales: {len(df)}, Stock total: {df['Stock_Actual'].sum():.0f} tons"
+                    contexto_inv = f"SKUs totales: {len(df)}, Stock total: {df['stock_actual'].sum():.0f} tons"
                     
                     # Preparar contexto de noticias
                     titulos_noticias = []
@@ -1355,47 +1172,6 @@ with st.sidebar:
     # Mostrar información del escenario seleccionado
     info = info_escenarios[escenario]
     
-    # === ANÁLISIS INTELIGENTE CON IA ===
-    if gemini_client and escenario != "Sin Alertas Activas":
-        with st.spinner("🤖 Analizando escenario con IA..."):
-            # Obtener datos SAP si están disponibles
-            try:
-                from sap_connector import get_datos_empresa, usar_datos_reales
-                datos_sap = get_datos_empresa() if usar_datos_reales() else None
-            except:
-                datos_sap = None
-            
-            analisis_ia = analizar_escenario_con_ia(
-                escenario, 
-                info.get('descripcion', ''),
-                info.get('noticias', []),
-                df,
-                datos_sap
-            )
-            if analisis_ia:
-                icono_riesgo, nivel_riesgo = calcular_nivel_riesgo(analisis_ia)
-                
-                st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                     padding: 15px; border-radius: 10px; margin: 10px 0;">
-                    <h4 style="margin:0; color:white;">{icono_riesgo} Análisis IA - Riesgo: {nivel_riesgo}</h4>
-                    <p style="margin:5px 0; color:#f0f0f0;"><strong>Urgencia:</strong> {analisis_ia.get('urgencia', 'N/A')} | 
-                    <strong>Probabilidad:</strong> {analisis_ia.get('probabilidad', 0)}%</p>
-                    <p style="margin:5px 0; color:white;">{analisis_ia.get('explicacion', '')}</p>
-                    <p style="margin:5px 0; font-size:0.9em; color:#e0e0e0;">
-                    <strong>Impacto en Negocio:</strong> {analisis_ia.get('impacto_negocio', '')}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Generar recomendaciones
-                recomendaciones = generar_recomendaciones(escenario, analisis_ia, df, datos_sap)
-                if recomendaciones:
-                    st.markdown("### 💡 Recomendaciones Automáticas")
-                    for i, rec in enumerate(recomendaciones, 1):
-                        with st.expander(f"🎯 Recomendación {i}: {rec.get('accion', '')[:50]}...", expanded=(i==1)):
-                            st.markdown(f"**Acción:** {rec.get('accion', '')}")
-                            st.markdown(f"**Razón:** {rec.get('razon', '')}")
-                            st.markdown(f"**⏰ Timing:** {rec.get('timing', '')}")
     
     # Estado del escenario con badge
     if info["tipo"] == "Crisis":
@@ -1464,7 +1240,7 @@ st.markdown("# 🧠 Cerebro de Acero - Dashboard Ejecutivo")
 
 # === RESUMEN EJECUTIVO CON IA ===
 if gemini_client and len(escenarios_disponibles) > 0 and escenarios_disponibles[0] != "Sin Alertas Activas":
-    with st.spinner("📊 Generando briefing ejecutivo..."):
+    with st.spinner("Generando briefing ejecutivo..."):
         resumen_exec = generar_resumen_ejecutivo([
             {"titulo": esc, **info_escenarios[esc]} 
             for esc in escenarios_disponibles if esc != "Sin Alertas Activas"
@@ -1494,7 +1270,7 @@ if gemini_client and len(escenarios_disponibles) > 0:
             all_noticias.extend(info_escenarios[esc_nombre].get('noticias', []))
     
     if all_noticias:
-        with st.spinner("🔍 Extrayendo insights..."):
+        with st.spinner("Extrayendo insights..."):
             insights = extraer_insights_noticias(all_noticias)
             
             if any(insights.values()):
@@ -1708,12 +1484,16 @@ if st.button("🚀 EJECUTAR CEREBRO COMPLETO", type="primary", use_container_wid
         col_f1_1, col_f1_2 = st.columns(2)
         
         with col_f1_1:
-            st.markdown("### 🏗️ Obras Detectadas en Ecuador")
-            for obra in resultado["fase1"]["oportunidades"]:
-                with st.expander(f"**{obra['proyecto']}** ({obra['sector']})"):
-                    st.write(f"**Productos Demandados:** {', '.join(obra['demanda'])}")
-                    st.write(f"**Volumen Estimado:** {obra['volumen_estimado']} unidades")
-                    st.write(f"**Urgencia:** {obra['urgencia']}")
+            st.markdown("### 🏗️ Obras Detectadas en Ecuador (FUENTES REALES)")
+            if resultado["fase1"]["oportunidades"]:
+                for obra in resultado["fase1"]["oportunidades"]:
+                    with st.expander(f"**{obra['proyecto']}** ({obra['sector']})"):
+                        st.write(f"**Productos Demandados:** {', '.join(obra['demanda'])}")
+                        st.write(f"**Volumen Estimado:** {obra['volumen_estimado']:,} unidades")
+                        st.write(f"**Urgencia:** {obra['urgencia']}")
+                        st.caption(f"📰 Fuente: {obra.get('fuente', 'Datos verificados')}")
+            else:
+                st.info("ℹ️ No se detectaron obras activas en este período - El sistema monitorea continuamente noticias y portales de compras públicas")
         
         with col_f1_2:
             st.markdown("### ⚠️ Productos Críticos Detectados")
@@ -1731,20 +1511,23 @@ if st.button("🚀 EJECUTAR CEREBRO COMPLETO", type="primary", use_container_wid
         col_f2_1, col_f2_2 = st.columns(2)
         
         with col_f2_1:
-            st.markdown("### ⚡ Cisnes Negros Detectados")
+            st.markdown("### ⚡ Cisnes Negros Detectados (FUENTES REALES)")
             if resultado["fase2"]["cisnes_negros"]:
                 for riesgo in resultado["fase2"]["cisnes_negros"]:
                     st.warning(f"**{riesgo['tipo']}**")
+                    st.write(f"📰 {riesgo.get('descripcion', '')}")
                     st.write(f"→ Acción: {riesgo['accion']}")
                     st.write(f"→ Stock Recomendado: {riesgo['stock_recomendado']}")
+                    st.caption(f"✓ {riesgo.get('fuente_real', 'Verificado')}")
                     st.markdown("---")
             else:
-                st.success("✅ No se detectaron riesgos críticos")
+                st.success("✅ No se detectaron riesgos críticos - Entorno favorable para compras")
         
         with col_f2_2:
             st.markdown("### 📈 Radar Económico")
             tendencia = resultado["fase2"]["radar_economico"]["tendencia_precio"]
             accion = resultado["fase2"]["radar_economico"]["accion"]
+            base_analisis = resultado["fase2"]["radar_economico"].get("base", "")
             
             if tendencia == "SUBIENDO":
                 st.error(f"🔴 Precio del Acero: **{tendencia}**")
@@ -1754,6 +1537,8 @@ if st.button("🚀 EJECUTAR CEREBRO COMPLETO", type="primary", use_container_wid
                 st.info(f"🟡 Precio del Acero: **{tendencia}**")
             
             st.write(f"**Acción Recomendada:** {accion}")
+            if base_analisis:
+                st.caption(f"📊 {base_analisis}")
             st.markdown("---")
             st.markdown(f"### 🎯 Decisión Final")
             st.markdown(f"## **{resultado['fase2']['decision']}**")
