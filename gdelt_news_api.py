@@ -23,22 +23,27 @@ def obtener_noticias_rss(max_noticias=20):
     
     noticias_detectadas = []
     
-    # RSS FEEDS SIN LÍMITES
+    # RSS FEEDS SIN LÍMITES - EN ESPAÑOL
     rss_feeds = [
         {
-            'url': 'https://www.reuters.com/rssfeed/businessNews',
-            'fuente': 'REUTERS',
-            'keywords_filter': ['steel', 'metal', 'iron', 'shipping', 'trade', 'tariff', 'export', 'import', 'china', 'mining', 'construction', 'infrastructure']
+            'url': 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada',
+            'fuente': 'EL PAÍS',
+            'keywords_filter': ['acero', 'metal', 'hierro', 'comercio', 'aranceles', 'exportación', 'importación', 'china', 'minería', 'construcción', 'infraestructura', 'logística']
         },
         {
-            'url': 'https://feeds.bbci.co.uk/news/business/rss.xml',
-            'fuente': 'BBC',
-            'keywords_filter': ['steel', 'metal', 'shipping', 'trade', 'china', 'supply', 'tariff', 'export']
+            'url': 'https://www.bbcmundo.com/rss',
+            'fuente': 'BBC MUNDO',
+            'keywords_filter': ['acero', 'metal', 'comercio', 'aranceles', 'china', 'exportación', 'logística', 'construcción']
         },
         {
-            'url': 'http://rss.cnn.com/rss/money_news_economy.rss',
-            'fuente': 'CNN',
-            'keywords_filter': ['steel', 'metal', 'trade', 'tariff', 'shipping', 'china']
+            'url': 'https://cnnespanol.cnn.com/category/economia/feed/',
+            'fuente': 'CNN ESPAÑOL',
+            'keywords_filter': ['acero', 'metal', 'comercio', 'aranceles', 'china', 'construcción', 'infraestructura']
+        },
+        {
+            'url': 'https://www.infobae.com/feeds/rss/',
+            'fuente': 'INFOBAE',
+            'keywords_filter': ['acero', 'metal', 'comercio', 'aranceles', 'exportación', 'construcción', 'minería']
         }
     ]
     
@@ -74,11 +79,11 @@ def obtener_noticias_rss(max_noticias=20):
                         
                         if any(kw in texto_completo for kw in feed_info['keywords_filter']):
                             
-                            # Detectar tipo (Crisis vs Oportunidad)
+                            # Detectar tipo (Crisis vs Oportunidad) - EN ESPAÑOL
                             tipo = "Crisis" if any(w in texto_completo for w in [
-                                'crisis', 'war', 'strike', 'shortage', 'disruption', 
-                                'conflict', 'decline', 'drop', 'fall', 'threat', 'risk',
-                                'down', 'cut', 'slash', 'recession'
+                                'crisis', 'guerra', 'huelga', 'escasez', 'interrupción', 
+                                'conflicto', 'caída', 'baja', 'amenaza', 'riesgo',
+                                'recesión', 'declive', 'corte', 'reducción'
                             ]) else "Oportunidad"
                             
                             # Parsear fecha RSS

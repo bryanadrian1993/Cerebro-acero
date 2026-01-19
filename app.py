@@ -1009,7 +1009,10 @@ with st.sidebar:
             st.markdown("---")
             st.markdown("**Noticias Relacionadas:**")
             for n in info["noticias"]:
-                st.markdown(f"- {n['titulo']} ({n['fuente']})")
+                # Agregar link clicable
+                link_url = n.get('url', '#')
+                fuente = n.get('fuente', 'Desconocido')
+                st.markdown(f"- [{n['titulo']}]({link_url}) ({fuente})")
     
     # Botón para forzar actualización inmediata
     if st.button("🔄 Forzar Actualizacióncenario"):
@@ -1023,7 +1026,10 @@ with st.sidebar:
             st.markdown("---")
             st.markdown("**Noticias Relacionadas:**")
             for n in info["noticias"]:
-                st.markdown(f"- {n['titulo']} ({n['fuente']})")
+                # Agregar link clicable
+                link_url = n.get('url', '#')
+                fuente = n.get('fuente', 'Desconocido')
+                st.markdown(f"- [{n['titulo']}]({link_url}) ({fuente})")
     
     # Botón para refrescar noticias
     if st.button("🔄 Actualizar Noticias", use_container_width=True):
