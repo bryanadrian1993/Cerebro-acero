@@ -894,6 +894,44 @@ with st.sidebar:
     st.markdown(f"🌐 **Última Actualización:** {datetime.now().strftime('%H:%M')}")
     st.caption(f"🔄 Auto-refresh en {refresh_interval//60} min")
     
+    # DASHBOARD APIS GRATUITAS
+    st.markdown("---")
+    st.markdown("### 📊 **Indicadores en Vivo**")
+    
+    try:
+        dashboard_apis = generar_dashboard_apis()
+        
+        # Precio Acero
+        acero_data = dashboard_apis["acero"]
+        st.metric(
+            "💰 Índice Acero Global",
+            f"${acero_data['precio']:.0f}",
+            delta=f"{acero_data['cambio_pct']:.1f}%",
+            delta_color="inverse"
+        )
+        
+        # Tasa cambio CNY (principal proveedor)
+        forex_data = dashboard_apis["forex"]
+        st.metric(
+            "💱 USD/CNY (China)",
+            f"¥{forex_data['CNY']:.2f}",
+            delta="Hoy"
+        )
+        
+        # Alertas clima
+        clima_alertas = dashboard_apis["clima"]
+        if clima_alertas:
+            st.warning(f"🌪️ {len(clima_alertas)} alerta(s) climáticas")
+        
+        # Desastres naturales
+        desastres = dashboard_apis["desastres"]
+        if desastres:
+            st.error(f"🌍 {len(desastres)} desastre(s) en zonas proveedores")
+    except Exception as e:
+        st.caption(f"⚠️ APIs en standby")
+    
+    st.markdown("---")
+    
     # Contador de alertas
     num_alertas = len([e for e in escenarios_disponibles if e != "Sin Alertas Activas"])
     if num_alertas > 0:
