@@ -11,7 +11,6 @@ import requests
 from apis_gratuitas import generar_dashboard_apis
 from apis_gratuitas_premium import generar_dashboard_completo_gratis
 from newsapi import NewsApiClient
-import streamlit.components.v1 as components
 from compras_publicas_ecuador import obtener_obras_detectadas_ecuador
 from gdelt_news_api import combinar_noticias_newsapi_gdelt
 
@@ -1065,49 +1064,22 @@ with st.sidebar:
                 # Traducir al español si está en inglés
                 titulo_display = traducir_a_espanol_simple(titulo_original, idioma) if idioma == 'en' else titulo_original
                 
-                # Usar componente HTML para link que abre en nueva pestaña
-                components.html(
-                    f'''<a href="{link_url}" target="_blank" rel="noopener noreferrer" 
-                        style="color: #1f77b4; text-decoration: none;">
-                        • {titulo_display}</a> 
-                    <span style="color: #888;">({fuente})</span><br>''',
-                    height=35
+                # Crear link con onclick JavaScript para abrir en nueva ventana
+                st.markdown(
+                    f'<a href="{link_url}" onclick="window.open(this.href); return false;" '
+                    f'style="color: #1f77b4; text-decoration: none; cursor: pointer;">'
+                    f'• {titulo_display}</a> '
+                    f'<span style="color: #888;">({fuente})</span>',
+                    unsafe_allow_html=True
                 )
     
     # Botón para forzar actualización inmediata
-    if st.button("🔄 Forzar Actualizacióncenario"):
-        if "titulo_noticia" in info:
-            st.markdown(f"**📰 Noticia:** {info['titulo_noticia']}")
-            st.markdown(f"**Categoría:** {info['categoria']}")
-        st.markdown(f"**Descripción:** {info['descripcion']}")
-        
-        # Mostrar todas las noticias relacionadas
-        if len(info.get("noticias", [])) > 1:
-            st.markdown("---")
-            st.markdown("**Noticias Relacionadas:**")
-            for n in info["noticias"]:
-                link_url = n.get('url', '#')
-                fuente = n.get('fuente', 'Desconocido')
-                idioma = n.get('idioma', 'es')
-                titulo_original = n['titulo']
-                
-                # Traducir al español si está en inglés
-                titulo_display = traducir_a_espanol_simple(titulo_original, idioma) if idioma == 'en' else titulo_original
-                
-                # Usar componente HTML para link que abre en nueva pestaña
-                components.html(
-                    f'''<a href="{link_url}" target="_blank" rel="noopener noreferrer" 
-                        style="color: #1f77b4; text-decoration: none;">
-                        • {titulo_display}</a> 
-                    <span style="color: #888;">({fuente})</span><br>''',
-                    height=35
-                )
-    
-    # Botón para refrescar noticias
-    if st.button("🔄 Actualizar Noticias", use_container_width=True):
+    if st.button("🔄 Forzar Actualización de Noticias"):
+        st.cache_data.clear()
         st.rerun()
-
-# Header principal
+    
+    with st.expander("ℹ️ Ver Detalles del Escenario"):
+        if "titulo_noticia" in info:
 st.markdown("# Tablero")
 st.markdown("---")
 
