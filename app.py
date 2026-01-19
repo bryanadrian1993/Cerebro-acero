@@ -1077,9 +1077,8 @@ with st.sidebar:
     if st.button("🔄 Forzar Actualización de Noticias"):
         st.cache_data.clear()
         st.rerun()
-    
-    with st.expander("ℹ️ Ver Detalles del Escenario"):
-        if "titulo_noticia" in info:
+
+# Header principal
 st.markdown("# Tablero")
 st.markdown("---")
 
