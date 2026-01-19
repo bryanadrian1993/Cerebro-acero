@@ -13,6 +13,7 @@ from apis_gratuitas_premium import generar_dashboard_completo_gratis
 from newsapi import NewsApiClient
 import streamlit.components.v1 as components
 from compras_publicas_ecuador import obtener_obras_detectadas_ecuador
+from gdelt_news_api import combinar_noticias_newsapi_gdelt
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(
@@ -58,10 +59,13 @@ if NEWSAPI_KEY:
 # ========================================
 
 def obtener_noticias_reales_newsapi():
-    """Obtiene noticias reales desde NewsAPI con búsquedas optimizadas"""
+    """Obtiene noticias reales desde NewsAPI + GDELT (híbrido sin límites)"""
+    
+    noticias_newsapi = []
     
     if not newsapi_client:
-        return []
+        # Si no hay NewsAPI, usar GDELT directo
+        return combinar_noticias_newsapi_gdelt([], max_total=20)
     
     try:
         noticias_detectadas = []
@@ -157,12 +161,16 @@ def obtener_noticias_reales_newsapi():
                 print(f"Error en keyword {keyword}: {e}")
                 continue
         
-        print(f"✅ NewsAPI: {len(noticias_detectadas)} noticias obtenidas")
-        return noticias_detectadas[:15]  # Máximo 15 noticias
+        # print(f"NewsAPI: {len(noticias_detectadas)} noticias obtenidas")
+        noticias_newsapi = noticias_detectadas[:15]
         
     except Exception as e:
-        print(f"❌ Error NewsAPI: {str(e)}")
-        return []
+        # print(f"Error NewsAPI: {str(e)}")
+        noticias_newsapi = []
+    
+    # COMBINACIÓN HÍBRIDA: NewsAPI + GDELT
+    # Si NewsAPI agotado, GDELT toma el 100%
+    return combinar_noticias_newsapi_gdelt(noticias_newsapi, max_total=20)
 
 def obtener_datos_economicos_worldbank():
     """Obtiene indicadores económicos desde World Bank API"""
@@ -867,8 +875,8 @@ def ejecutar_cerebro_acero(escenario):
     }
 
 # --- INTERFAZ GRÁFICA ---
-# Auto-refresh cada 10 minutos (600 segundos)
-refresh_interval = 600  # 10 minutos
+# Auto-refresh cada 2 horas (7200 segundos) para preservar NewsAPI
+refresh_interval = 7200  # 2 horas (GDELT sin límites compensa)
 
 # Generar escenarios desde noticias mundiales (se actualiza automáticamente)
 escenarios_disponibles, info_escenarios = generar_escenarios_desde_noticias()
@@ -919,7 +927,7 @@ with st.sidebar:
     
     # DASHBOARD PREMIUM GRATUITO (Yahoo Finance, BDRY, etc.)
     st.markdown("---")
-    st.markdown("### 💰 **Datos Premium (Ahorro: $19,692/año)**")
+    st.markdown("### 💰 **Datos Premium**")
     
     try:
         dashboard_premium = generar_dashboard_completo_gratis()
@@ -967,7 +975,7 @@ with st.sidebar:
         st.markdown("### ✅ Sin Alertas")
     
     # Selector de escenarios dinámico
-    escenario = st.selectbox("", 
+    escenario = st.selectbox("Seleccione Escenario", 
         escenarios_disponibles,
         label_visibility="collapsed")
     
@@ -1029,7 +1037,7 @@ st.markdown("---")
 try:
     dashboard_premium = generar_dashboard_completo_gratis()
     
-    st.markdown("### 💰 Datos de Mercado en Tiempo Real (Ahorro: $19,692/año)")
+    st.markdown("### 💰 Datos de Mercado en Tiempo Real")
     
     col_a, col_b, col_c, col_d = st.columns(4)
     
