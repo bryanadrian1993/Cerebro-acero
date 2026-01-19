@@ -23,25 +23,50 @@ def obtener_noticias_rss(max_noticias=20):
     
     noticias_detectadas = []
     
-    # RSS FEEDS SIN LÍMITES - ESPAÑOL + INGLÉS (máxima cobertura)
+    # RSS FEEDS SIN LÍMITES - ESPAÑOL + INGLÉS + ECUADOR (máxima cobertura)
     rss_feeds = [
-        # FUENTES EN ESPAÑOL
+        # FUENTES DE ECUADOR (prioridad para contexto local)
+        {
+            'url': 'https://www.elcomercio.com/feed/',
+            'fuente': 'EL COMERCIO EC',
+            'idioma': 'es',
+            'pais': 'Ecuador',
+            'keywords_filter': ['acero', 'metal', 'hierro', 'comercio', 'aranceles', 'exportación', 'importación', 'china', 'minería', 'construcción', 'infraestructura', 'logística', 'puerto', 'guayaquil', 'quito', 'petroleo', 'obra']
+        },
+        {
+            'url': 'https://www.eluniverso.com/feed/',
+            'fuente': 'EL UNIVERSO EC',
+            'idioma': 'es',
+            'pais': 'Ecuador',
+            'keywords_filter': ['acero', 'metal', 'comercio', 'construcción', 'infraestructura', 'puerto', 'guayaquil', 'obra', 'proyecto', 'licitación']
+        },
+        {
+            'url': 'https://www.primicias.ec/feed/',
+            'fuente': 'PRIMICIAS EC',
+            'idioma': 'es',
+            'pais': 'Ecuador',
+            'keywords_filter': ['acero', 'metal', 'comercio', 'construcción', 'infraestructura', 'economia', 'exportación', 'importación', 'obra']
+        },
+        # FUENTES EN ESPAÑOL (Latinoamérica)
         {
             'url': 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada',
             'fuente': 'EL PAÍS',
             'idioma': 'es',
+            'pais': 'España',
             'keywords_filter': ['acero', 'metal', 'hierro', 'comercio', 'aranceles', 'exportación', 'importación', 'china', 'minería', 'construcción', 'infraestructura', 'logística']
         },
         {
             'url': 'https://cnnespanol.cnn.com/category/economia/feed/',
             'fuente': 'CNN ESPAÑOL',
             'idioma': 'es',
+            'pais': 'Global',
             'keywords_filter': ['acero', 'metal', 'comercio', 'aranceles', 'china', 'construcción', 'infraestructura']
         },
         {
             'url': 'https://www.infobae.com/feeds/rss/',
             'fuente': 'INFOBAE',
             'idioma': 'es',
+            'pais': 'Argentina',
             'keywords_filter': ['acero', 'metal', 'comercio', 'aranceles', 'exportación', 'construcción', 'minería']
         },
         # FUENTES EN INGLÉS (mayor cobertura internacional)
@@ -49,18 +74,21 @@ def obtener_noticias_rss(max_noticias=20):
             'url': 'https://www.reuters.com/rssfeed/businessNews',
             'fuente': 'REUTERS',
             'idioma': 'en',
+            'pais': 'Global',
             'keywords_filter': ['steel', 'metal', 'iron', 'shipping', 'trade', 'tariff', 'export', 'import', 'china', 'mining', 'construction', 'infrastructure']
         },
         {
             'url': 'https://feeds.bbci.co.uk/news/business/rss.xml',
             'fuente': 'BBC',
             'idioma': 'en',
+            'pais': 'UK',
             'keywords_filter': ['steel', 'metal', 'shipping', 'trade', 'china', 'supply', 'tariff', 'export']
         },
         {
             'url': 'http://rss.cnn.com/rss/money_news_economy.rss',
             'fuente': 'CNN',
             'idioma': 'en',
+            'pais': 'USA',
             'keywords_filter': ['steel', 'metal', 'trade', 'tariff', 'shipping', 'china']
         }
     ]
@@ -126,6 +154,7 @@ def obtener_noticias_rss(max_noticias=20):
                                 "descripcion": descripcion_text[:200] if descripcion_text else titulo_text,
                                 "fuente": feed_info['fuente'],
                                 "idioma": feed_info['idioma'],  # Guardar idioma original
+                                "pais": feed_info.get('pais', 'Global'),  # País de origen
                                 "fecha": fecha,
                                 "url": link_text,
                                 "tipo": tipo,
