@@ -1113,50 +1113,6 @@ with st.sidebar:
     except Exception as e:
         st.caption(f"⚠️ APIs premium en standby: {str(e)}")
     
-    # === CHATBOT IA ===
-    st.markdown("---")
-    if gemini_client:
-        st.markdown("### 🤖 Asistente IA")
-        
-        # Input de pregunta
-        pregunta_usuario = st.text_input(
-            "Pregunta al Cerebro:",
-            placeholder="Ej: ¿Cuánto inventario tengo de HRC?",
-            key="chatbot_input"
-        )
-        
-        if st.button("💬 Consultar", use_container_width=True):
-            if pregunta_usuario:
-                with st.spinner("Analizando..."):
-                    # Preparar contexto de inventario
-                    contexto_inv = f"SKUs totales: {len(df)}, Stock total: {df['stock_actual'].sum():.0f} tons"
-                    
-                    # Preparar contexto de noticias
-                    titulos_noticias = []
-                    for esc_n in escenarios_disponibles[:3]:
-                        if esc_n != "Sin Alertas Activas":
-                            for n in info_escenarios[esc_n].get('noticias', [])[:2]:
-                                titulos_noticias.append(n.get('titulo', '')[:80])
-                    contexto_news = "\n".join(titulos_noticias[:5])
-                    
-                    # Obtener respuesta
-                    respuesta = responder_pregunta_chatbot(
-                        pregunta_usuario,
-                        contexto_inv,
-                        contexto_news
-                    )
-                    
-                    st.markdown(f"""
-                    <div style="background: #1e293b; padding: 15px; border-radius: 10px; 
-                         border-left: 4px solid #3b82f6;">
-                        <p style="margin:0; color: #e2e8f0;">{respuesta}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-            else:
-                st.warning("Por favor escribe una pregunta")
-    
-    st.markdown("---")
-    
     # Contador de alertas
     num_alertas = len([e for e in escenarios_disponibles if e != "Sin Alertas Activas"])
     if num_alertas > 0:
@@ -1237,77 +1193,6 @@ with st.sidebar:
 
 # Header principal
 st.markdown("# 🧠 Cerebro de Acero - Dashboard Ejecutivo")
-
-# === RESUMEN EJECUTIVO CON IA ===
-if gemini_client and len(escenarios_disponibles) > 0 and escenarios_disponibles[0] != "Sin Alertas Activas":
-    with st.spinner("Generando briefing ejecutivo..."):
-        resumen_exec = generar_resumen_ejecutivo([
-            {"titulo": esc, **info_escenarios[esc]} 
-            for esc in escenarios_disponibles if esc != "Sin Alertas Activas"
-        ])
-        
-        if resumen_exec and resumen_exec.get('puntos_clave'):
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
-                 padding: 20px; border-radius: 15px; margin-bottom: 20px; color: white;">
-                <h2 style="margin:0 0 15px 0;">📋 {resumen_exec.get('titulo', 'Briefing del Día')}</h2>
-                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px;">
-                    <ul style="margin:0; padding-left: 20px;">
-            """ + "".join([f"<li style='margin: 8px 0; font-size: 1.05em;'>{punto}</li>" 
-                          for punto in resumen_exec.get('puntos_clave', [])]) + f"""
-                    </ul>
-                </div>
-                <p style="margin:15px 0 0 0; font-style: italic; font-size: 0.95em;">
-                💡 <strong>Conclusión:</strong> {resumen_exec.get('conclusion', '')}</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-# === INSIGHTS DE NOTICIAS ===
-if gemini_client and len(escenarios_disponibles) > 0:
-    all_noticias = []
-    for esc_nombre in escenarios_disponibles:
-        if esc_nombre != "Sin Alertas Activas":
-            all_noticias.extend(info_escenarios[esc_nombre].get('noticias', []))
-    
-    if all_noticias:
-        with st.spinner("Extrayendo insights..."):
-            insights = extraer_insights_noticias(all_noticias)
-            
-            if any(insights.values()):
-                col_i1, col_i2, col_i3 = st.columns(3)
-                
-                with col_i1:
-                    if insights.get('paises'):
-                        st.markdown("""
-                        <div style="background: #1e3a8a; padding: 15px; border-radius: 10px; text-align: center;">
-                            <h4 style="color: white; margin:0 0 10px 0;">🌍 Países Clave</h4>
-                            <p style="color: #93c5fd; font-size: 1.1em; margin:0;">
-                        """ + ", ".join(insights['paises'][:5]) + """
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                
-                with col_i2:
-                    if insights.get('empresas'):
-                        st.markdown("""
-                        <div style="background: #065f46; padding: 15px; border-radius: 10px; text-align: center;">
-                            <h4 style="color: white; margin:0 0 10px 0;">🏢 Empresas Mencionadas</h4>
-                            <p style="color: #86efac; font-size: 1.1em; margin:0;">
-                        """ + ", ".join(insights['empresas'][:5]) + """
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                
-                with col_i3:
-                    if insights.get('productos'):
-                        st.markdown("""
-                        <div style="background: #7c2d12; padding: 15px; border-radius: 10px; text-align: center;">
-                            <h4 style="color: white; margin:0 0 10px 0;">🔩 Productos Afectados</h4>
-                            <p style="color: #fdba74; font-size: 1.1em; margin:0;">
-                        """ + ", ".join(insights['productos'][:5]) + """
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True)
 
 st.markdown("---")
 
