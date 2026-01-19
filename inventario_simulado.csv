@@ -1,0 +1,75 @@
+sku,producto,stock_actual,stock_minimo,categoria
+VIGA-IPE-80,Viga IPE 80,171,142,Vigas
+VIGA-IPE-100,Viga IPE 100,141,170,Vigas
+VIGA-IPE-120,Viga IPE 120,237,147,Vigas
+VIGA-IPE-140,Viga IPE 140,261,73,Vigas
+VIGA-IPE-160,Viga IPE 160,62,101,Vigas
+VIGA-IPE-180,Viga IPE 180,152,197,Vigas
+VIGA-IPE-200,Viga IPE 200,189,59,Vigas
+VIGA-IPE-240,Viga IPE 240,236,102,Vigas
+VIGA-IPE-300,Viga IPE 300,111,191,Vigas
+VIGA-HEB-100,Viga HEB 100,299,148,Vigas
+VIGA-HEB-120,Viga HEB 120,95,165,Vigas
+VIGA-HEB-140,Viga HEB 140,248,92,Vigas
+VIGA-HEB-160,Viga HEB 160,146,132,Vigas
+VIGA-HEB-200,Viga HEB 200,175,172,Vigas
+VIGA-HEB-240,Viga HEB 240,43,108,Vigas
+VIGA-HEB-300,Viga HEB 300,230,95,Vigas
+VIGA-IPN-80,Viga IPN 80,183,104,Vigas
+VIGA-IPN-100,Viga IPN 100,79,134,Vigas
+VIGA-IPN-120,Viga IPN 120,90,193,Vigas
+VIGA-IPN-160,Viga IPN 160,260,64,Vigas
+VIGA-UPN-80,Viga UPN 80,168,100,Vigas
+VIGA-UPN-100,Viga UPN 100,54,179,Vigas
+VIGA-UPN-120,Viga UPN 120,191,55,Vigas
+VIGA-UPN-160,Viga UPN 160,228,114,Vigas
+VIGA-UPN-200,Viga UPN 200,21,139,Vigas
+TUBO-INOX-304-1/2,"Tubo Redondo Inox 304 1/2""",23,124,Tuberías
+TUBO-INOX-304-3/4,"Tubo Redondo Inox 304 3/4""",124,196,Tuberías
+TUBO-INOX-304-1,"Tubo Redondo Inox 304 1""",24,154,Tuberías
+TUBO-INOX-304-1.5,"Tubo Redondo Inox 304 1 1/2""",284,159,Tuberías
+TUBO-INOX-304-2,"Tubo Redondo Inox 304 2""",167,162,Tuberías
+TUBO-INOX-316-1,"Tubo Redondo Inox 316 1""",34,126,Tuberías
+TUBO-INOX-316-1.5,"Tubo Redondo Inox 316 1 1/2""",69,189,Tuberías
+TUBO-INOX-316-2,"Tubo Redondo Inox 316 2""",264,82,Tuberías
+TUBO-CUAD-INOX-20x20,Tubo Cuadrado Inox 20x20mm,23,128,Tuberías
+TUBO-CUAD-INOX-25x25,Tubo Cuadrado Inox 25x25mm,84,71,Tuberías
+TUBO-CUAD-INOX-30x30,Tubo Cuadrado Inox 30x30mm,281,134,Tuberías
+TUBO-CUAD-INOX-40x40,Tubo Cuadrado Inox 40x40mm,218,50,Tuberías
+TUBO-GALV-1/2,"Tubo Galvanizado 1/2""",297,123,Tuberías
+TUBO-GALV-3/4,"Tubo Galvanizado 3/4""",119,69,Tuberías
+TUBO-GALV-1,"Tubo Galvanizado 1""",18,168,Tuberías
+TUBO-GALV-1.5,"Tubo Galvanizado 1 1/2""",176,63,Tuberías
+TUBO-GALV-2,"Tubo Galvanizado 2""",78,136,Tuberías
+TUBO-GALV-3,"Tubo Galvanizado 3""",58,65,Tuberías
+TUBO-GALV-4,"Tubo Galvanizado 4""",180,98,Tuberías
+PLANCHA-INOX-304-2B,Plancha Inoxidable 304 2B,164,187,Planchas
+PLANCHA-INOX-304-BA,Plancha Inoxidable 304 BA,198,69,Planchas
+PLANCHA-INOX-304-N4,Plancha Inoxidable 304 N°4,43,193,Planchas
+PLANCHA-INOX-316-2B,Plancha Inoxidable 316 2B,107,99,Planchas
+PLANCHA-INOX-316-BA,Plancha Inoxidable 316 BA,172,116,Planchas
+PLANCHA-INOX-430-2B,Plancha Inoxidable 430 2B,121,199,Planchas
+PLANCHA-GALV-G60,Plancha Galvanizada G60,20,81,Planchas
+PLANCHA-GALV-G90,Plancha Galvanizada G90,179,189,Planchas
+PLANCHA-NEGRO-LAF,Plancha Negra LAF (Laminada en Frío),210,93,Planchas
+PLANCHA-NEGRO-LAC,Plancha Negra LAC (Laminada en Caliente),17,132,Planchas
+PLANCHA-NAVAL-A36,Plancha Naval A36,94,93,Planchas
+ANGULAR-25x25,Angular 25x25mm,184,173,Perfilería
+ANGULAR-30x30,Angular 30x30mm,109,53,Perfilería
+ANGULAR-40x40,Angular 40x40mm,233,140,Perfilería
+ANGULAR-50x50,Angular 50x50mm,192,159,Perfilería
+PLATINA-INOX-25x3,Platina Inox 25x3mm,236,132,Perfilería
+PLATINA-INOX-30x3,Platina Inox 30x3mm,58,58,Perfilería
+PLATINA-INOX-40x5,Platina Inox 40x5mm,292,150,Perfilería
+CANAL-U-80,Canal U 80mm,89,122,Perfilería
+CANAL-U-100,Canal U 100mm,135,187,Perfilería
+LOSA-DECK-0.75,Losa Deck 0.75mm,106,168,Losa Deck
+LOSA-DECK-0.90,Losa Deck 0.90mm,209,79,Losa Deck
+LOSA-DECK-1.00,Losa Deck 1.00mm,299,180,Losa Deck
+CUBIERTA-GALV-TRAPEZOIDAL,Cubierta Galvanizada Trapezoidal,157,190,Cubiertas
+CUBIERTA-GALV-ONDULADA,Cubierta Galvanizada Ondulada,192,145,Cubiertas
+CUBIERTA-PREPINTADA,Cubierta Prepintada,233,115,Cubiertas
+ACC-PASAMANOS-INOX,Accesorios Pasamanos Inox,65,112,Accesorios
+ACC-VIDRIO-TEMPLADO,Accesorios para Vidrio Templado,90,162,Accesorios
+PERNOS-AUTOPERF,Pernos Autoperforantes,110,113,Accesorios
+TRASLUCIDOS,Translúcidos,22,71,Accesorios

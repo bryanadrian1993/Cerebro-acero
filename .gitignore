@@ -1,0 +1,9 @@
+*.pyc
+__pycache__/
+.venv/
+venv/
+*.log
+.DS_Store
+ngrok.exe
+ngrok.zip
+*.zip
