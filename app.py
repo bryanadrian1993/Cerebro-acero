@@ -185,115 +185,113 @@ def obtener_datos_economicos_worldbank():
     return {"precio_acero_index": 100, "tendencia": "ESTABLE"}
 
 def clasificar_noticia_en_escenario(noticia):
-    """Clasifica una noticia real en un escenario de negocio"""
+    """Clasifica una noticia SOLO si tiene impacto directo en el negocio"""
     
     titulo = noticia['titulo'].lower()
+    descripcion = noticia.get('descripcion', '').lower()
     keyword = noticia.get('keyword', '').lower()
+    contenido = f"{titulo} {descripcion} {keyword}"
     
-    # Detectar tipo de crisis/oportunidad
-    if 'china' in titulo or 'china' in keyword:
-        if 'export' in titulo or 'strike' in titulo or 'port' in titulo:
-            return {
-                "escenario": "Crisis Fletes China",
-                "categoria": "Geopolítica",
-                "impacto": "Crisis"
-            }
+    # CRITERIO ESTRICTO: Solo alertar si afecta directamente acero/logística/Ecuador
     
-    if 'red sea' in titulo or 'suez' in titulo or 'shipping' in titulo:
+    # 1. CRISIS LOGÍSTICA (afecta importación)
+    if any(word in contenido for word in ['steel', 'iron', 'metal']) and \
+       any(word in contenido for word in ['shipping', 'port', 'strike', 'delay', 'disruption', 'blockage']):
         return {
-            "escenario": "Crisis Fletes Mar Rojo",
-            "categoria": "Geopolítica",
-            "impacto": "Crisis"
+            "escenario": "Crisis Fletes Global",
+            "categoria": "Logística",
+            "impacto": "Crisis",
+            "relevancia": "ALTA"
         }
     
-    if 'earthquake' in titulo or 'turkey' in titulo:
-        return {
-            "escenario": "Crisis Proveedor Turquía",
-            "categoria": "Desastre Natural",
-            "impacto": "Crisis"
-        }
-    
-    if 'tariff' in titulo or 'trade war' in titulo:
+    # 2. GUERRA COMERCIAL / ARANCELES (afecta precios)
+    if any(word in contenido for word in ['steel', 'iron', 'metal']) and \
+       any(word in contenido for word in ['tariff', 'trade war', 'sanction', 'embargo', 'import ban']):
         return {
             "escenario": "Alerta Salvaguardia",
-            "categoria": "Regulación",
-            "impacto": "Crisis"
+            "categoria": "Aranceles",
+            "impacto": "Crisis",
+            "relevancia": "ALTA"
         }
     
-    if 'ecuador' in titulo and 'mining' in titulo:
+    # 3. CRISIS PROVEEDOR (afecta suministro)
+    if any(proveedor in contenido for proveedor in ['china', 'turkey', 'india', 'korea']) and \
+       any(word in contenido for word in ['steel', 'iron', 'metal']) and \
+       any(word in contenido for word in ['shortage', 'production cut', 'factory close', 'earthquake']):
         return {
-            "escenario": "Boom Minero Ecuador",
-            "categoria": "Minería",
-            "impacto": "Oportunidad"
+            "escenario": "Crisis Proveedor",
+            "categoria": "Suministro",
+            "impacto": "Crisis",
+            "relevancia": "ALTA"
         }
     
-    if 'ecuador' in titulo and ('oil' in titulo or 'petroleum' in titulo):
+    # 4. BOOM ECUADOR (oportunidad directa)
+    if 'ecuador' in contenido and \
+       any(word in contenido for word in ['mining', 'oil', 'petroleum', 'infrastructure', 'construction', 'project', 'investment']):
         return {
-            "escenario": "Boom Petrolero",
-            "categoria": "Petróleo",
-            "impacto": "Oportunidad"
+            "escenario": "Boom Ecuador",
+            "categoria": "Oportunidad Local",
+            "impacto": "Oportunidad",
+            "relevancia": "ALTA"
         }
     
-    if 'infrastructure' in titulo or 'construction boom' in titulo:
+    # 5. AUMENTO DE PRECIO ACERO (afecta margen)
+    if any(word in contenido for word in ['steel price', 'iron ore price', 'metal price']) and \
+       any(word in contenido for word in ['surge', 'rise', 'increase', 'rally', 'soar']):
         return {
-            "escenario": "Boom Infraestructura",
-            "categoria": "Infraestructura",
-            "impacto": "Oportunidad"
+            "escenario": "Escalada Precios",
+            "categoria": "Precios",
+            "impacto": "Crisis",
+            "relevancia": "MEDIA"
         }
     
-    # Por defecto
-    if noticia['tipo'] == "Crisis":
+    # 6. NUEVA DEMANDA GLOBAL (oportunidad)
+    if any(word in contenido for word in ['infrastructure', 'construction boom', 'mining expansion']) and \
+       any(word in contenido for word in ['steel', 'metal', 'demand']):
         return {
-            "escenario": "Crisis Global Acero",
-            "categoria": "Mercado",
-            "impacto": "Crisis"
+            "escenario": "Boom Infraestructura Global",
+            "categoria": "Demanda",
+            "impacto": "Oportunidad",
+            "relevancia": "MEDIA"
         }
-    else:
-        return {
-            "escenario": "Oportunidad Mercado",
-            "categoria": "Economía",
-            "impacto": "Oportunidad"
-        }
+    
+    # Si no cumple ningún criterio, NO ES RELEVANTE
+    return None
 
 def obtener_noticias_mundiales():
-    """Función principal: obtiene SOLO noticias reales desde NewsAPI"""
+    """Función principal: obtiene SOLO noticias RELEVANTES desde NewsAPI"""
     
     # Verificar que NewsAPI esté configurada
     if not newsapi_client:
-        st.error("⚠️ ERROR: NewsAPI no está configurada. Verifica NEWSAPI_KEY en app.py línea 27")
+        st.error("⚠️ ERROR: NewsAPI no está configurada. Configure NEWSAPI_KEY en .streamlit/secrets.toml")
         st.stop()
     
     # Obtener noticias reales
     noticias_reales = obtener_noticias_reales_newsapi()
     
     if not noticias_reales:
-        st.warning("⚠️ No se encontraron noticias relevantes en este momento. Intenta actualizar en unos minutos.")
-        # Retornar al menos un escenario por defecto
-        return [{
-            "titulo": "Mercado estable - Sin eventos críticos detectados",
-            "categoria": "Normal",
-            "impacto": "Normal",
-            "escenario": "Mercado Normal",
-            "descripcion": "No se detectaron eventos extraordinarios en las últimas 24 horas",
-            "fuente": "NewsAPI",
-            "es_real": True
-        }]
+        # Sin noticias = Sin alertas
+        return []
     
-    # Procesar noticias reales
-    noticias_procesadas = []
+    # Procesar y FILTRAR solo las relevantes
+    noticias_relevantes = []
     for noticia in noticias_reales:
         clasificacion = clasificar_noticia_en_escenario(noticia)
-        noticias_procesadas.append({
-            "titulo": noticia['titulo'][:100],  # Limitar longitud
-            "categoria": clasificacion['categoria'],
-            "impacto": clasificacion['impacto'],
-            "escenario": clasificacion['escenario'],
-            "descripcion": noticia['descripcion'][:150] if noticia['descripcion'] else noticia['titulo'][:150],
-            "fuente": noticia.get('fuente', 'NewsAPI'),
-            "es_real": True
-        })
+        
+        # SOLO agregar si tiene impacto real
+        if clasificacion and clasificacion.get('relevancia') in ['ALTA', 'MEDIA']:
+            noticias_relevantes.append({
+                "titulo": noticia['titulo'][:100],
+                "categoria": clasificacion['categoria'],
+                "impacto": clasificacion['impacto'],
+                "escenario": clasificacion['escenario'],
+                "descripcion": noticia['descripcion'][:150] if noticia['descripcion'] else noticia['titulo'][:150],
+                "fuente": noticia.get('fuente', 'NewsAPI'),
+                "relevancia": clasificacion['relevancia'],
+                "es_real": True
+            })
     
-    return noticias_procesadas
+    return noticias_relevantes
 
 def generar_escenarios_desde_noticias():
     """Genera lista de escenarios basados en noticias reales de NewsAPI"""
@@ -301,22 +299,31 @@ def generar_escenarios_desde_noticias():
     noticias = obtener_noticias_mundiales()
     
     # Siempre incluir Mercado Normal
-    escenarios = ["Mercado Normal"]
-    info_escenarios = {
-        "Mercado Normal": {
-            "descripcion": "Sin eventos extraordinarios detectados",
-            "tipo": "Normal",
-            "fuente": "Sistema",
-            "es_real": True,
-            "noticias": []
-        }
-    }
+    escenariosescenarios SOLO con noticias relevantes - Sin relleno artificial"""
     
-    # Agregar escenarios desde noticias REALES
+    noticias = obtener_noticias_mundiales()
+    
+    # Si NO hay noticias relevantes, modo TRANQUILO
+    if not noticias:
+        return ["Sin Alertas Activas"], {
+            "Sin Alertas Activas": {
+                "descripcion": "No se detectaron eventos que afecten el negocio en las últimas 24 horas",
+                "tipo": "Normal",
+                "fuente": "NewsAPI (Monitoreo Automático)",
+                "es_real": True,
+                "noticias": [],
+                "ultima_actualizacion": datetime.now().strftime('%Y-%m-%d %H:%M')
+            }
+        }
+    
+    # Si HAY noticias relevantes, crear escenarios
+    escenarios = []
+    info_escenarios = {}
+    
     for noticia in noticias:
         escenario_nombre = noticia["escenario"]
         
-        # Evitar duplicados - si ya existe, agregar a la lista de noticias
+        # Evitar duplicados - agrupar noticias similares
         if escenario_nombre in info_escenarios:
             info_escenarios[escenario_nombre]["noticias"].append(noticia)
         else:
@@ -327,13 +334,10 @@ def generar_escenarios_desde_noticias():
                 "categoria": noticia["categoria"],
                 "titulo_noticia": noticia["titulo"],
                 "fuente": noticia.get("fuente", "NewsAPI"),
-                "es_real": noticia.get("es_real", True),
-                "noticias": [noticia]
-            }
-    
-    return escenarios, info_escenarios
-
-# --- CSS PERSONALIZADO TEMA OSCURO ---
+                "relevancia": noticia.get("relevancia", "MEDIA"),
+                "es_real": True,
+                "noticias": [noticia],
+                "ultima_actualizacion": datetime.now().strftime('%Y-%m-%d %H:%M')--
 st.markdown("""
 <style>
     /* Fondo oscuro global */
@@ -795,30 +799,37 @@ def ejecutar_cerebro_acero(escenario):
         "fase4": fase4
     }
 
-# --- INTERFAZ GRÁFICA ---
-# Generar escenarios desde noticias mundiales
+# Auto-refresh cada 10 minutos (600 segundos)
+import time as time_module
+refresh_interval = 600  # 10 minutos
+
+# Generar escenarios desde noticias mundiales (se actualiza automáticamente)
+escenarios_disponibles, info_escenarios = generar_escenarios_desde_noticias()
+
+# Configurar auto-refresh
+st.markdown(f"""
+<script>
+    setTimeout(function(){{
+        window.location.reload();
+    }}, {refresh_interval * 1000});
+</script>
+""", unsafe_allow_html=True
 escenarios_disponibles, info_escenarios = generar_escenarios_desde_noticias()
 
 # Sidebar con menú de navegación
 with st.sidebar:
     st.markdown("### 🧠 CEREBRO DE ACERO")
     st.markdown("**Import Aceros S.A.**")
-    st.caption("📍 Quito, Ecuador | +20 años")
-    st.markdown("---")
+    ultima_actualizacion = info_escenarios[list(info_escenarios.keys())[0]].get('ultima_actualizacion', datetime.now().strftime('%Y-%m-%d %H:%M'))
+    st.markdown(f"🌐 **Última Actualización:** {datetime.now().strftime('%H:%M')}")
+    st.caption(f"🔄 Auto-refresh en {refresh_interval//60} min")
     
-    menu = st.radio(
-        "",
-        ["🏠 Tablero Principal", "📦 Inventario Real", "⚠️ Alertas Geopolíticas", 
-         "📊 Reportes BI", "⚙️ Configuración"],
-        label_visibility="collapsed"
-    )
-    
-    st.markdown("---")
-    st.markdown("### ⚙️ Panel de Control")
-    
-    # Mostrar última actualización de noticias
-    st.markdown(f"🌐 **Noticias Actualizadas:** {datetime.now().strftime('%H:%M')}")
-    st.markdown("**Escenarios Detectados:**")
+    # Contador de alertas
+    num_alertas = len([e for e in escenarios_disponibles if e != "Sin Alertas Activas"])
+    if num_alertas > 0:
+        st.markdown(f"### ⚠️ {num_alertas} Alerta{'s' if num_alertas > 1 else ''} Activa{'s' if num_alertas > 1 else ''}")
+    else:
+        st.markdown("### ✅ Sin Alertas")
     
     # Selector de escenarios dinámico
     escenario = st.selectbox("", 
@@ -830,20 +841,35 @@ with st.sidebar:
     
     # Estado del escenario con badge
     if info["tipo"] == "Crisis":
-        st.markdown('<div class="status-badge-critico">🔴 Crisis Activa</div>', unsafe_allow_html=True)
+        st.markdown('<div class="status-badge-critico">🔴 Crisis Detectada</div>', unsafe_allow_html=True)
+        if info.get("relevancia") == "ALTA":
+            st.error("⚡ IMPACTO ALTO - Acción Inmediata")
     elif info["tipo"] == "Oportunidad":
         st.markdown('<div class="status-badge-live">🟢 Oportunidad</div>', unsafe_allow_html=True)
+        if info.get("relevancia") == "ALTA":
+            st.success("⚡ RELEVANCIA ALTA")
     else:
-        st.markdown('<div class="status-badge-warning">⚪ Normal</div>', unsafe_allow_html=True)
+        st.markdown('<div class="status-badge-warning">✅ Operación Normal</div>', unsafe_allow_html=True)
     
     # Indicador de fuente de datos
-    if info.get("es_real", False):
-        st.success(f"✅ Noticia Real - Fuente: {info['fuente']}")
-    else:
-        st.info(f"📊 Simulado - Fuente: {info['fuente']}")
+    st.success(f"✅ Datos Reales - {info['fuente']}")
     
     # Descripción del escenario
     with st.expander("ℹ️ Detalles del Escenario"):
+        if "titulo_noticia" in info:
+            st.markdown(f"**📰 Noticia:** {info['titulo_noticia']}")
+            st.markdown(f"**Categoría:** {info['categoria']}")
+        st.markdown(f"**Descripción:** {info['descripcion']}")
+        
+        # Mostrar todas las noticias relacionadas
+        if len(info.get("noticias", [])) > 1:
+            st.markdown("---")
+            st.markdown("**Noticias Relacionadas:**")
+            for n in info["noticias"]:
+                st.markdown(f"- {n['titulo']} ({n['fuente']})")
+    
+    # Botón para forzar actualización inmediata
+    if st.button("🔄 Forzar Actualizacióncenario"):
         if "titulo_noticia" in info:
             st.markdown(f"**📰 Noticia:** {info['titulo_noticia']}")
             st.markdown(f"**Categoría:** {info['categoria']}")
