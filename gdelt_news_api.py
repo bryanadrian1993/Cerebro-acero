@@ -146,16 +146,26 @@ def obtener_noticias_rss(max_noticias=20):
                             tipo = "Crisis" if any(w in texto_completo for w in palabras_crisis) else "Oportunidad"
                             
                             # Parsear fecha RSS
+                            fecha_valida = True
                             try:
                                 if pub_date is not None and pub_date.text:
                                     # Formato: Mon, 18 Jan 2026 14:30:00 GMT
                                     from email.utils import parsedate_to_datetime
                                     fecha_dt = parsedate_to_datetime(pub_date.text)
                                     fecha = fecha_dt.isoformat()
+                                    
+                                    # FILTRO: Solo noticias de últimos 3 días
+                                    dias_diferencia = (datetime.now() - fecha_dt.replace(tzinfo=None)).days
+                                    if dias_diferencia > 3:
+                                        fecha_valida = False
                                 else:
                                     fecha = datetime.now().isoformat()
                             except:
                                 fecha = datetime.now().isoformat()
+                            
+                            # Solo agregar si la fecha es válida (últimos 3 días)
+                            if not fecha_valida:
+                                continue
                             
                             noticias_detectadas.append({
                                 "titulo": titulo_text,
