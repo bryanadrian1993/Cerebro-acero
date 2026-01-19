@@ -16,60 +16,46 @@ from gdelt_news_api import combinar_noticias_newsapi_gdelt
 
 # --- TRADUCCIÓN SIMPLE AL ESPAÑOL ---
 def traducir_a_espanol_simple(texto, idioma_origen='en'):
-    """Traduce títulos de noticias en inglés a español (palabras clave expandido)"""
+    """Traduce textos en inglés a español usando OpenAI GPT (traducción perfecta)"""
     if idioma_origen == 'es':
         return texto  # Ya está en español
     
-    # Diccionario EXPANDIDO de traducción (150+ palabras)
+    # Si hay OpenAI disponible, usar traducción profesional
+    if client:
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Eres un traductor profesional. Traduce el siguiente texto del inglés al español de forma natural y fluida, manteniendo el significado original."},
+                    {"role": "user", "content": texto}
+                ],
+                max_tokens=500,
+                temperature=0.3
+            )
+            traduccion = response.choices[0].message.content.strip()
+            return traduccion
+        except Exception as e:
+            print(f"Error en traducción OpenAI: {e}")
+            # Si falla, usar diccionario de respaldo
+    
+    # RESPALDO: Diccionario básico si OpenAI no está disponible
     traducciones = {
-        # Palabras clave acero/comercio
         'steel': 'acero', 'tariff': 'arancel', 'tariffs': 'aranceles', 'trade': 'comercio',
         'war': 'guerra', 'china': 'China', 'shipping': 'envío', 'export': 'exportación',
         'import': 'importación', 'growth': 'crecimiento', 'threat': 'amenaza',
         'boom': 'auge', 'currency': 'moneda', 'weapon': 'arma', 'companies': 'empresas',
-        'energy': 'energía', 'greenland': 'Groenlandia', 'metal': 'metal', 'iron': 'hierro',
-        
-        # Verbos comunes
         'hits': 'alcanza', 'strikes': 'golpea', 'says': 'dice', 'defied': 'desafió',
         'never': 'nunca', 'will': 'usará', 'has': 'ha', 'have': 'han', 'announced': 'anunciado',
-        'put': 'puesto', 'thrown': 'lanzado', 'cast': 'lanzado', 'suggest': 'sugieren',
-        'hit': 'alcanzó', 'going': 'yendo', 'use': 'usar', 'could': 'podría',
-        'would': 'haría', 'should': 'debería', 'may': 'puede', 'might': 'podría',
-        
-        # Sustantivos económicos
         'goal': 'meta', 'economy': 'economía', 'policy': 'política', 'prices': 'precios',
-        'price': 'precio', 'world': 'mundo', 'market': 'mercado', 'markets': 'mercados',
-        'dollar': 'dólar', 'dollars': 'dólares', 'figures': 'cifras', 'data': 'datos',
-        'analysts': 'analistas', 'doubt': 'duda', 'target': 'objetivo', 'chaos': 'caos',
-        'exports': 'exportaciones', 'imports': 'importaciones', 'goods': 'productos',
-        
-        # Adjetivos
-        'volatile': 'volátil', 'official': 'oficial', 'new': 'nuevo', 'global': 'global',
-        'international': 'internacional', 'domestic': 'doméstico', 'foreign': 'extranjero',
-        'major': 'importante', 'critical': 'crítico', 'high': 'alto', 'low': 'bajo',
-        'strong': 'fuerte', 'weak': 'débil', 'unacceptable': 'inaceptable',
-        
-        # Conectores/preposiciones
-        'after': 'después', 'over': 'sobre', 'into': 'en', 'from': 'desde', 'with': 'con',
-        'about': 'sobre', 'against': 'contra', 'between': 'entre', 'through': 'a través',
-        'during': 'durante', 'before': 'antes', 'under': 'bajo', 'above': 'sobre',
-        
-        # Palabras políticas/geográficas
-        'trump': 'Trump', 'european': 'europeos', 'leaders': 'líderes', 'president': 'presidente',
-        'government': 'gobierno', 'administration': 'administración', 'congress': 'congreso',
-        'senate': 'senado', 'house': 'cámara',
-        
-        # Otros términos relevantes
-        'why': 'por qué', 'what': 'qué', 'when': 'cuándo', 'where': 'dónde', 'how': 'cómo',
-        'some': 'algunos', 'many': 'muchos', 'more': 'más', 'less': 'menos', 'most': 'la mayoría',
-        'all': 'todos', 'and': 'y', 'but': 'pero', 'the': 'el/la', 'its': 'su', 'their': 'su',
-        'his': 'su', 'her': 'su', 'on': 'en', 'at': 'en'
+        'world': 'mundo', 'market': 'mercado', 'dollar': 'dólar', 'figures': 'cifras',
+        'data': 'datos', 'analysts': 'analistas', 'doubt': 'duda', 'target': 'objetivo',
+        'chaos': 'caos', 'volatile': 'volátil', 'official': 'oficial', 'after': 'después',
+        'over': 'sobre', 'into': 'en', 'some': 'algunos', 'and': 'y', 'but': 'pero'
     }
     
     texto_traducido = texto
+    import re
     for en, es in traducciones.items():
-        # Reemplazar palabras completas (case-insensitive)
-        import re
         texto_traducido = re.sub(r'\b' + en + r'\b', es, texto_traducido, flags=re.IGNORECASE)
     
     return texto_traducido
