@@ -12,6 +12,7 @@ from apis_gratuitas import generar_dashboard_apis
 from apis_gratuitas_premium import generar_dashboard_completo_gratis
 from newsapi import NewsApiClient
 import streamlit.components.v1 as components
+from compras_publicas_ecuador import obtener_obras_detectadas_ecuador
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(
