@@ -9,7 +9,9 @@ from datetime import datetime, timedelta
 import random
 import requests
 from apis_gratuitas import generar_dashboard_apis
+from apis_gratuitas_premium import generar_dashboard_completo_gratis
 from newsapi import NewsApiClient
+import streamlit.components.v1 as components
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(
@@ -928,7 +930,47 @@ with st.sidebar:
         if desastres:
             st.error(f"🌍 {len(desastres)} desastre(s) en zonas proveedores")
     except Exception as e:
-        st.caption(f"⚠️ APIs en standby")
+        st.caption(f"⚠️ APIs básicas en standby")
+    
+    # DASHBOARD PREMIUM GRATUITO (Yahoo Finance, BDRY, etc.)
+    st.markdown("---")
+    st.markdown("### 💰 **Datos Premium (Ahorro: $19,692/año)**")
+    
+    try:
+        dashboard_premium = generar_dashboard_completo_gratis()
+        
+        # Precio Acero Real (Yahoo Finance)
+        acero_premium = dashboard_premium['acero']
+        st.metric(
+            "🔥 Precio Acero HRC (Real)",
+            f"${acero_premium['precio']:.2f}/ton",
+            delta=f"{acero_premium['cambio_pct']:.1f}%",
+            delta_color="inverse"
+        )
+        st.caption(f"Fuente: {acero_premium['fuente']}")
+        
+        # Costo de Fletes (BDRY ETF)
+        fletes_premium = dashboard_premium['fletes']
+        st.metric(
+            "🚢 Container 40' (Estimado)",
+            f"${fletes_premium['costo_estimado_40ft']:.0f}",
+            delta=fletes_premium['tendencia']
+        )
+        st.caption(f"Recomendación: {fletes_premium['recomendacion']}")
+        
+        # Tasa CNY detallada
+        forex_premium = dashboard_premium['forex']
+        if 'Yuan Chino' in forex_premium:
+            yuan_data = forex_premium['Yuan Chino']
+            st.metric(
+                "💵 CNY/USD (Detallado)",
+                f"¥{yuan_data['tasa']:.4f}",
+                delta=f"{yuan_data['cambio_mes']:.2f}% (mes)"
+            )
+            st.caption(yuan_data['alerta'])
+        
+    except Exception as e:
+        st.caption(f"⚠️ APIs premium en standby: {str(e)}")
     
     st.markdown("---")
     
@@ -997,6 +1039,60 @@ with st.sidebar:
 # Header principal
 st.markdown("# Tablero")
 st.markdown("---")
+
+# SECCIÓN NUEVA: Datos Premium en Tiempo Real
+try:
+    dashboard_premium = generar_dashboard_completo_gratis()
+    
+    st.markdown("### 💰 Datos de Mercado en Tiempo Real (Ahorro: $19,692/año)")
+    
+    col_a, col_b, col_c, col_d = st.columns(4)
+    
+    with col_a:
+        acero_premium = dashboard_premium['acero']
+        st.metric(
+            "Precio Acero HRC",
+            f"${acero_premium['precio']:.2f}/ton",
+            delta=f"{acero_premium['cambio_pct']:.1f}%",
+            delta_color="inverse"
+        )
+        st.caption(acero_premium['tendencia'])
+    
+    with col_b:
+        fletes_premium = dashboard_premium['fletes']
+        st.metric(
+            "Flete Container 40'",
+            f"${fletes_premium['costo_estimado_40ft']:.0f}",
+            delta=f"{fletes_premium['cambio_pct']:.1f}%"
+        )
+        st.caption(fletes_premium['recomendacion'])
+    
+    with col_c:
+        forex_premium = dashboard_premium['forex']
+        if 'Yuan Chino' in forex_premium:
+            yuan_data = forex_premium['Yuan Chino']
+            st.metric(
+                "CNY/USD",
+                f"¥{yuan_data['tasa']:.4f}",
+                delta=f"{yuan_data['cambio_mes']:.2f}%"
+            )
+            st.caption(yuan_data['alerta'])
+    
+    with col_d:
+        # Mostrar commodities relacionados
+        commodities = dashboard_premium['commodities']
+        if 'Cobre' in commodities:
+            cobre_data = commodities['Cobre']
+            st.metric(
+                "Cobre (Indicador)",
+                f"${cobre_data['precio']:.2f}",
+                delta=f"{cobre_data['cambio_pct']:.1f}%"
+            )
+            st.caption("Proxy de mercado")
+    
+    st.markdown("---")
+except:
+    pass
 
 # Métricas principales con tarjetas mejoradas
 col1, col2, col3 = st.columns(3)
