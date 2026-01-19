@@ -115,7 +115,15 @@ def obtener_noticias_rss(max_noticias=20):
                     if titulo is not None:
                         titulo_text = titulo.text or "Sin título"
                         descripcion_text = descripcion.text if descripcion is not None else titulo_text
-                        link_text = link.text if link is not None else '#'
+                        
+                        # Extraer link correctamente (algunos RSS usan .text, otros tienen el URL directo)
+                        link_text = '#'
+                        if link is not None:
+                            link_text = link.text.strip() if link.text and link.text.strip() else '#'
+                            # Si link.text está vacío, intentar obtener como atributo o contenido
+                            if link_text == '#':
+                                # Algunos feeds tienen el link sin .text
+                                link_text = link.attrib.get('href', '#')
                         
                         # Filtrar por keywords relevantes
                         titulo_lower = titulo_text.lower()

@@ -1061,6 +1061,9 @@ with st.sidebar:
                 idioma = n.get('idioma', 'es')
                 titulo_original = n['titulo']
                 
+                # DEBUG: Ver qué URL llega
+                # st.write(f"DEBUG URL: {link_url}")
+                
                 # Traducir al español si está en inglés
                 titulo_display = traducir_a_espanol_simple(titulo_original, idioma) if idioma == 'en' else titulo_original
                 
