@@ -24,8 +24,15 @@ import streamlit as st
 # CONFIGURACIÓN SAP
 # ========================================
 
-# Descomentar cuando tengas las credenciales SAP
+# Descomentar cuando tengas las credenciales SAP Y hayas instalado: pip install pyrfc
 """
+NOTA: pyrfc solo funciona LOCALMENTE (requiere SAP NetWeaver RFC SDK)
+NO está disponible en Streamlit Cloud
+
+Para instalar localmente:
+1. Descargar SAP NetWeaver RFC SDK
+2. pip install pyrfc
+
 from pyrfc import Connection
 
 def get_sap_connection():

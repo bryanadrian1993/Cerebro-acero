@@ -4,4 +4,3 @@ plotly
 newsapi-python
 pandas
 requests
-pyrfc
