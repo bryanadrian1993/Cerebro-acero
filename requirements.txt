@@ -4,3 +4,5 @@ plotly
 newsapi-python
 pandas
 requests
+yfinance
+beautifulsoup4
