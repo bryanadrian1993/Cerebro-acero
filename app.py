@@ -15,6 +15,54 @@ import streamlit.components.v1 as components
 from compras_publicas_ecuador import obtener_obras_detectadas_ecuador
 from gdelt_news_api import combinar_noticias_newsapi_gdelt
 
+# --- TRADUCCIÓN SIMPLE AL ESPAÑOL ---
+def traducir_a_espanol_simple(texto, idioma_origen='en'):
+    """Traduce títulos de noticias en inglés a español (palabras clave)"""
+    if idioma_origen == 'es':
+        return texto  # Ya está en español
+    
+    # Diccionario de traducción de palabras clave
+    traducciones = {
+        'steel': 'acero',
+        'tariff': 'arancel',
+        'tariffs': 'aranceles',
+        'trade': 'comercio',
+        'war': 'guerra',
+        'china': 'China',
+        'shipping': 'envío',
+        'export': 'exportación',
+        'import': 'importación',
+        'growth': 'crecimiento',
+        'threat': 'amenaza',
+        'hits': 'alcanza',
+        'boom': 'auge',
+        'strikes': 'golpea',
+        'says': 'dice',
+        'goal': 'meta',
+        'after': 'después',
+        'defied': 'desafió',
+        'currency': 'moneda',
+        'weapon': 'arma',
+        'never': 'nunca',
+        'will': 'usará',
+        'going': 'yendo',
+        'companies': 'empresas',
+        'energy': 'energía',
+        'unacceptable': 'inaceptable',
+        'leaders': 'líderes',
+        'european': 'europeos',
+        'over': 'sobre',
+        'greenland': 'Groenlandia'
+    }
+    
+    texto_traducido = texto
+    for en, es in traducciones.items():
+        # Reemplazar palabras completas (case-insensitive)
+        import re
+        texto_traducido = re.sub(r'\b' + en + r'\b', es, texto_traducido, flags=re.IGNORECASE)
+    
+    return texto_traducido
+
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(
     page_title="CEREBRO DE ACERO - Import Aceros S.A. | Sistema de Inteligencia Logística v1.0",
@@ -1009,11 +1057,22 @@ with st.sidebar:
             st.markdown("---")
             st.markdown("**Noticias Relacionadas:**")
             for n in info["noticias"]:
-                # Agregar link clicable que abre en nueva pestaña
                 link_url = n.get('url', '#')
                 fuente = n.get('fuente', 'Desconocido')
-                titulo = n['titulo']
-                st.markdown(f'- <a href="{link_url}" target="_blank">{titulo}</a> ({fuente})', unsafe_allow_html=True)
+                idioma = n.get('idioma', 'es')
+                titulo_original = n['titulo']
+                
+                # Traducir al español si está en inglés
+                titulo_display = traducir_a_espanol_simple(titulo_original, idioma) if idioma == 'en' else titulo_original
+                
+                # Usar componente HTML para link que abre en nueva pestaña
+                components.html(
+                    f'''<a href="{link_url}" target="_blank" rel="noopener noreferrer" 
+                        style="color: #1f77b4; text-decoration: none;">
+                        • {titulo_display}</a> 
+                    <span style="color: #888;">({fuente})</span><br>''',
+                    height=35
+                )
     
     # Botón para forzar actualización inmediata
     if st.button("🔄 Forzar Actualizacióncenario"):
@@ -1027,11 +1086,22 @@ with st.sidebar:
             st.markdown("---")
             st.markdown("**Noticias Relacionadas:**")
             for n in info["noticias"]:
-                # Agregar link clicable que abre en nueva pestaña
                 link_url = n.get('url', '#')
                 fuente = n.get('fuente', 'Desconocido')
-                titulo = n['titulo']
-                st.markdown(f'- <a href="{link_url}" target="_blank">{titulo}</a> ({fuente})', unsafe_allow_html=True)
+                idioma = n.get('idioma', 'es')
+                titulo_original = n['titulo']
+                
+                # Traducir al español si está en inglés
+                titulo_display = traducir_a_espanol_simple(titulo_original, idioma) if idioma == 'en' else titulo_original
+                
+                # Usar componente HTML para link que abre en nueva pestaña
+                components.html(
+                    f'''<a href="{link_url}" target="_blank" rel="noopener noreferrer" 
+                        style="color: #1f77b4; text-decoration: none;">
+                        • {titulo_display}</a> 
+                    <span style="color: #888;">({fuente})</span><br>''',
+                    height=35
+                )
     
     # Botón para refrescar noticias
     if st.button("🔄 Actualizar Noticias", use_container_width=True):
