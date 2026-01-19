@@ -115,25 +115,34 @@ def traducir_a_espanol_simple(texto, idioma_origen='en'):
 
 # === FUNCIONES DE INTELIGENCIA ARTIFICIAL CON GEMINI ===
 
-def analizar_escenario_con_ia(titulo_escenario, descripcion, noticias):
-    """Analiza un escenario y genera explicación, impacto y urgencia usando Gemini"""
+def analizar_escenario_con_ia(titulo_escenario, descripcion, noticias, inventario_df=None, datos_sap=None):
+    """Analiza un escenario y genera explicación, impacto y urgencia usando Gemini + SAP"""
     if not gemini_client:
         return None
     
     try:
         contexto_noticias = "\n".join([f"- {n.get('titulo', '')[:100]}" for n in noticias[:3]])
+        
+        # Contexto de inventario (SAP o simulado)
+        contexto_inventario = ""
+        if datos_sap:
+            contexto_inventario = f"\nDATO SAP REAL: {len(datos_sap.get('inventario', []))} SKUs en sistema, Órdenes de compra abiertas: {len(datos_sap.get('ordenes', []))}"
+        elif inventario_df is not None:
+            contexto_inventario = f"\nINVENTARIO: {len(inventario_df)} SKUs, Stock total: {inventario_df['stock_actual'].sum():.0f} unidades"
+        
         prompt = f"""Eres un analista experto en logística y comercio de acero.
 
 ESCENARIO: {titulo_escenario}
 DESCRIPCIÓN: {descripcion}
 NOTICIAS RECIENTES:
 {contexto_noticias}
+{contexto_inventario}
 
 Genera un análisis en formato JSON con:
 1. "explicacion": Por qué este escenario es crítico (2-3 oraciones)
 2. "impacto_negocio": Impacto específico en Import Aceros (costos, tiempos, disponibilidad)
 3. "urgencia": "ALTA" | "MEDIA" | "BAJA"
-4. "probabilidad": Probabilidad de que ocurra (0-100%)
+4. "probabilidad": Probabilidad de que ocurra basada en noticias recientes (0-100%)
 
 Responde SOLO con JSON válido, sin markdown."""
 
@@ -148,15 +157,28 @@ Responde SOLO con JSON válido, sin markdown."""
     except:
         return None
 
-def generar_recomendaciones(titulo_escenario, analisis, inventario_df=None):
-    """Genera recomendaciones accionables basadas en el escenario"""
+def generar_recomendaciones(titulo_escenario, analisis, inventario_df=None, datos_sap=None):
+    """Genera recomendaciones accionables basadas en el escenario + datos SAP"""
     if not gemini_client:
         return []
     
     try:
         inventario_info = ""
-        if inventario_df is not None and len(inventario_df) > 0:
-            inventario_info = f"\nINVENTARIO ACTUAL: {len(inventario_df)} SKUs, Stock Total: {inventario_df['Stock_Actual'].sum():.0f} tons"
+        if datos_sap:
+            # Usar datos REALES de SAP
+            inv_sap = datos_sap.get('inventario', pd.DataFrame())
+            ordenes_sap = datos_sap.get('ordenes', [])
+            ventas_sap = datos_sap.get('ventas', pd.DataFrame())
+            
+            inventario_info = f"""
+DATOS SAP (REALES):
+- SKUs totales: {len(inv_sap)}
+- Stock total: {inv_sap['stock_actual'].sum():.0f} unidades
+- Órdenes de compra abiertas: {len(ordenes_sap)}
+- Tendencia de ventas (6 meses): {ventas_sap['monto_usd'].sum():.0f} USD
+"""
+        elif inventario_df is not None and len(inventario_df) > 0:
+            inventario_info = f"\nINVENTARIO ACTUAL: {len(inventario_df)} SKUs, Stock Total: {inventario_df['stock_actual'].sum():.0f} unidades"
         
         prompt = f"""Eres un asesor estratégico de Import Aceros S.A.
 
@@ -1187,6 +1209,9 @@ refresh_interval = 7200  # 2 horas (GDELT sin límites compensa)
 # Generar escenarios desde noticias mundiales (se actualiza automáticamente)
 escenarios_disponibles, info_escenarios = generar_escenarios_desde_noticias()
 
+# === CARGAR INVENTARIO (necesario para IA) ===
+df = cargar_inventario()
+
 # Sidebar con menú de navegación
 with st.sidebar:
     st.markdown("### 🧠 CEREBRO DE ACERO")
@@ -1333,10 +1358,19 @@ with st.sidebar:
     # === ANÁLISIS INTELIGENTE CON IA ===
     if gemini_client and escenario != "Sin Alertas Activas":
         with st.spinner("🤖 Analizando escenario con IA..."):
+            # Obtener datos SAP si están disponibles
+            try:
+                from sap_connector import get_datos_empresa, usar_datos_reales
+                datos_sap = get_datos_empresa() if usar_datos_reales() else None
+            except:
+                datos_sap = None
+            
             analisis_ia = analizar_escenario_con_ia(
                 escenario, 
                 info.get('descripcion', ''),
-                info.get('noticias', [])
+                info.get('noticias', []),
+                df,
+                datos_sap
             )
             if analisis_ia:
                 icono_riesgo, nivel_riesgo = calcular_nivel_riesgo(analisis_ia)
@@ -1354,7 +1388,7 @@ with st.sidebar:
                 """, unsafe_allow_html=True)
                 
                 # Generar recomendaciones
-                recomendaciones = generar_recomendaciones(escenario, analisis_ia, df)
+                recomendaciones = generar_recomendaciones(escenario, analisis_ia, df, datos_sap)
                 if recomendaciones:
                     st.markdown("### 💡 Recomendaciones Automáticas")
                     for i, rec in enumerate(recomendaciones, 1):
