@@ -34,11 +34,14 @@ def traducir_a_espanol_simple(texto, idioma_origen='en'):
     
     resultado = None
     
-    # 🥇 ESTRATEGIA 1: Gemini Pro (primaria - gratis)
+    # 🥇 ESTRATEGIA 1: Gemini (primaria - gratis)
     if gemini_client:
         try:
             prompt = f"Traduce al español con gramática perfecta (contexto: economía/comercio internacional): {texto}"
-            response = gemini_client.generate_content(prompt)
+            response = gemini_client.models.generate_content(
+                model='gemini-flash-latest',
+                contents=prompt
+            )
             resultado = response.text.strip()
             _cache_traducciones[texto] = resultado
             return resultado
@@ -135,15 +138,14 @@ except:
 # WorldBank API (No requiere key - pública)
 WORLDBANK_API_ENABLED = True
 
-# Inicializar cliente de Gemini Pro (Google)
+# Inicializar cliente de Gemini (Google - nuevo SDK)
 gemini_client = None
 if GEMINI_API_KEY:
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
-        gemini_client = genai.GenerativeModel('gemini-pro')
+        from google import genai
+        gemini_client = genai.Client(api_key=GEMINI_API_KEY)
     except ImportError:
-        st.warning("⚠️ Instale google-generativeai: pip install google-generativeai")
+        st.warning("⚠️ Instale google-genai: pip install google-genai")
     except Exception as e:
         st.warning(f"⚠️ Error al inicializar Gemini: {e}")
 # -------------------------------------
