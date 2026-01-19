@@ -15,19 +15,58 @@ from compras_publicas_ecuador import obtener_obras_detectadas_ecuador
 from gdelt_news_api import combinar_noticias_newsapi_gdelt
 
 # --- TRADUCCIÓN SIMPLE AL ESPAÑOL ---
-# Cache de traducciones para evitar llamadas repetidas a OpenAI
+# Cache de traducciones para evitar llamadas repetidas a APIs
 _cache_traducciones = {}
 
 def traducir_a_espanol_simple(texto, idioma_origen='en'):
-    """Traduce textos en inglés a español (diccionario profesional expandido)"""
+    """
+    Traduce texto al español usando:
+    1. Gemini Pro (Google - gratis, 60 req/min)
+    2. OpenAI GPT-3.5 (fallback si hay crédito)
+    3. Patrones de frases (fallback final)
+    """
     if idioma_origen == 'es':
         return texto
     
-    # Verificar caché
+    # Cache: evitar llamadas repetidas a APIs
     if texto in _cache_traducciones:
         return _cache_traducciones[texto]
     
-    # Diccionario profesional expandido (200+ palabras) + patrones
+    resultado = None
+    
+    # 🥇 ESTRATEGIA 1: Gemini Pro (primaria - gratis)
+    if gemini_client:
+        try:
+            prompt = f"Traduce al español con gramática perfecta (contexto: economía/comercio internacional): {texto}"
+            response = gemini_client.generate_content(prompt)
+            resultado = response.text.strip()
+            _cache_traducciones[texto] = resultado
+            return resultado
+        except Exception as e:
+            # Si falla Gemini, continuar con OpenAI
+            pass
+    
+    # 🥈 ESTRATEGIA 2: OpenAI GPT-3.5 (fallback si hay crédito)
+    if OPENAI_API_KEY and not resultado:
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=OPENAI_API_KEY)
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{
+                    "role": "user",
+                    "content": f"Traduce al español con gramática perfecta: {texto}"
+                }],
+                max_tokens=200
+            )
+            resultado = response.choices[0].message.content.strip()
+            _cache_traducciones[texto] = resultado
+            return resultado
+        except:
+            # Si OpenAI falla (sin crédito), continuar con patrones
+            pass
+    
+    # 🥉 ESTRATEGIA 3: Patrones de frases (fallback final - sin APIs)
     import re
     
     # Traducir frases completas comunes
@@ -85,14 +124,28 @@ try:
     # Intenta cargar desde Streamlit Secrets (Cloud)
     NEWSAPI_KEY = st.secrets.get("NEWSAPI_KEY", "")
     OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
+    GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 except:
     # Si no está en Cloud, busca en secrets.toml local (NO se sube a GitHub)
     NEWSAPI_KEY = ""
     OPENAI_API_KEY = ""
+    GEMINI_API_KEY = ""
     st.warning("⚠️ Configure las API keys en .streamlit/secrets.toml (local) o en Streamlit Cloud Settings")
 
 # WorldBank API (No requiere key - pública)
 WORLDBANK_API_ENABLED = True
+
+# Inicializar cliente de Gemini Pro (Google)
+gemini_client = None
+if GEMINI_API_KEY:
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_API_KEY)
+        gemini_client = genai.GenerativeModel('gemini-pro')
+    except ImportError:
+        st.warning("⚠️ Instale google-generativeai: pip install google-generativeai")
+    except Exception as e:
+        st.warning(f"⚠️ Error al inicializar Gemini: {e}")
 # -------------------------------------
 
 client = None
