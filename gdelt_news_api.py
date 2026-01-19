@@ -23,27 +23,45 @@ def obtener_noticias_rss(max_noticias=20):
     
     noticias_detectadas = []
     
-    # RSS FEEDS SIN LÍMITES - EN ESPAÑOL
+    # RSS FEEDS SIN LÍMITES - ESPAÑOL + INGLÉS (máxima cobertura)
     rss_feeds = [
+        # FUENTES EN ESPAÑOL
         {
             'url': 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada',
             'fuente': 'EL PAÍS',
+            'idioma': 'es',
             'keywords_filter': ['acero', 'metal', 'hierro', 'comercio', 'aranceles', 'exportación', 'importación', 'china', 'minería', 'construcción', 'infraestructura', 'logística']
-        },
-        {
-            'url': 'https://www.bbcmundo.com/rss',
-            'fuente': 'BBC MUNDO',
-            'keywords_filter': ['acero', 'metal', 'comercio', 'aranceles', 'china', 'exportación', 'logística', 'construcción']
         },
         {
             'url': 'https://cnnespanol.cnn.com/category/economia/feed/',
             'fuente': 'CNN ESPAÑOL',
+            'idioma': 'es',
             'keywords_filter': ['acero', 'metal', 'comercio', 'aranceles', 'china', 'construcción', 'infraestructura']
         },
         {
             'url': 'https://www.infobae.com/feeds/rss/',
             'fuente': 'INFOBAE',
+            'idioma': 'es',
             'keywords_filter': ['acero', 'metal', 'comercio', 'aranceles', 'exportación', 'construcción', 'minería']
+        },
+        # FUENTES EN INGLÉS (mayor cobertura internacional)
+        {
+            'url': 'https://www.reuters.com/rssfeed/businessNews',
+            'fuente': 'REUTERS',
+            'idioma': 'en',
+            'keywords_filter': ['steel', 'metal', 'iron', 'shipping', 'trade', 'tariff', 'export', 'import', 'china', 'mining', 'construction', 'infrastructure']
+        },
+        {
+            'url': 'https://feeds.bbci.co.uk/news/business/rss.xml',
+            'fuente': 'BBC',
+            'idioma': 'en',
+            'keywords_filter': ['steel', 'metal', 'shipping', 'trade', 'china', 'supply', 'tariff', 'export']
+        },
+        {
+            'url': 'http://rss.cnn.com/rss/money_news_economy.rss',
+            'fuente': 'CNN',
+            'idioma': 'en',
+            'keywords_filter': ['steel', 'metal', 'trade', 'tariff', 'shipping', 'china']
         }
     ]
     
@@ -79,12 +97,17 @@ def obtener_noticias_rss(max_noticias=20):
                         
                         if any(kw in texto_completo for kw in feed_info['keywords_filter']):
                             
-                            # Detectar tipo (Crisis vs Oportunidad) - EN ESPAÑOL
-                            tipo = "Crisis" if any(w in texto_completo for w in [
+                            # Detectar tipo (Crisis vs Oportunidad) - BILINGÜE
+                            palabras_crisis = [
+                                # Español
                                 'crisis', 'guerra', 'huelga', 'escasez', 'interrupción', 
                                 'conflicto', 'caída', 'baja', 'amenaza', 'riesgo',
-                                'recesión', 'declive', 'corte', 'reducción'
-                            ]) else "Oportunidad"
+                                'recesión', 'declive', 'corte', 'reducción',
+                                # Inglés
+                                'war', 'strike', 'shortage', 'disruption', 'conflict',
+                                'decline', 'drop', 'fall', 'threat', 'risk', 'recession'
+                            ]
+                            tipo = "Crisis" if any(w in texto_completo for w in palabras_crisis) else "Oportunidad"
                             
                             # Parsear fecha RSS
                             try:
@@ -102,6 +125,7 @@ def obtener_noticias_rss(max_noticias=20):
                                 "titulo": titulo_text,
                                 "descripcion": descripcion_text[:200] if descripcion_text else titulo_text,
                                 "fuente": feed_info['fuente'],
+                                "idioma": feed_info['idioma'],  # Guardar idioma original
                                 "fecha": fecha,
                                 "url": link_text,
                                 "tipo": tipo,
