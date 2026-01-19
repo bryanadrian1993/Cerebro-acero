@@ -18,15 +18,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- ⚠️ CONFIGURACIÓN DE API KEYS ---
-# Intentar obtener de Streamlit Secrets (Cloud) o usar local
+# --- ⚠️ CONFIGURACIÓN SEGURA DE API KEYS ---
+# Las claves se cargan desde archivos seguros, NUNCA del código
 try:
-    NEWSAPI_KEY = st.secrets.get("NEWSAPI_KEY", "5fde0fa9683a46448acf790b594d03d6")
+    # Intenta cargar desde Streamlit Secrets (Cloud)
+    NEWSAPI_KEY = st.secrets.get("NEWSAPI_KEY", "")
     OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
 except:
-    # Fallback para ejecución local
-    NEWSAPI_KEY = "5fde0fa9683a46448acf790b594d03d6"
+    # Si no está en Cloud, busca en secrets.toml local (NO se sube a GitHub)
+    NEWSAPI_KEY = ""
     OPENAI_API_KEY = ""
+    st.warning("⚠️ Configure las API keys en .streamlit/secrets.toml (local) o en Streamlit Cloud Settings")
 
 # WorldBank API (No requiere key - pública)
 WORLDBANK_API_ENABLED = True
