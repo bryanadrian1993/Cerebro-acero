@@ -19,19 +19,21 @@ st.set_page_config(
 )
 
 # --- ⚠️ CONFIGURACIÓN DE API KEYS ---
-# OpenAI (opcional - actualmente deshabilitada)
-OPENAI_API_KEY = "" 
-
-# NewsAPI - Para noticias mundiales (Gratis: 100 requests/día)
-# Obtén tu key en: https://newsapi.org/
-NEWSAPI_KEY = ""  # ⬅️ PEGA TU API KEY AQUÍ
+# Intentar obtener de Streamlit Secrets (Cloud) o usar local
+try:
+    NEWSAPI_KEY = st.secrets.get("NEWSAPI_KEY", "5fde0fa9683a46448acf790b594d03d6")
+    OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
+except:
+    # Fallback para ejecución local
+    NEWSAPI_KEY = "5fde0fa9683a46448acf790b594d03d6"
+    OPENAI_API_KEY = ""
 
 # WorldBank API (No requiere key - pública)
 WORLDBANK_API_ENABLED = True
 # -------------------------------------
 
 client = None
-if OPENAI_API_KEY != "TU_API_KEY_AQUI":
+if OPENAI_API_KEY:
     try:
         client = OpenAI(api_key=OPENAI_API_KEY)
     except:
@@ -39,7 +41,7 @@ if OPENAI_API_KEY != "TU_API_KEY_AQUI":
 
 # Inicializar NewsAPI
 newsapi_client = None
-if NEWSAPI_KEY != "TU_NEWSAPI_KEY_AQUI":
+if NEWSAPI_KEY:
     try:
         newsapi_client = NewsApiClient(api_key=NEWSAPI_KEY)
     except:
@@ -50,40 +52,60 @@ if NEWSAPI_KEY != "TU_NEWSAPI_KEY_AQUI":
 # ========================================
 
 def obtener_noticias_reales_newsapi():
-    """Obtiene noticias reales desde NewsAPI"""
+    """Obtiene noticias reales desde NewsAPI con búsquedas optimizadas"""
     
     if not newsapi_client:
         return []
     
     try:
-        # Palabras clave para detectar eventos relevantes
-        keywords_crisis = [
-            'steel crisis', 'shipping crisis', 'port strike', 
-            'china export', 'war shipping', 'red sea', 'suez canal',
-            'earthquake turkey', 'steel tariff', 'trade war'
-        ]
-        
-        keywords_oportunidad = [
-            'ecuador mining', 'ecuador infrastructure', 'steel demand',
-            'mining boom', 'oil project ecuador', 'construction boom'
-        ]
-        
         noticias_detectadas = []
-        fecha_desde = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+        fecha_desde = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
         
-        # Buscar noticias de crisis
-        for keyword in keywords_crisis[:3]:  # Limitar búsquedas
+        # 1. NOTICIAS TOP GLOBALES (business + technology)
+        try:
+            top_news = newsapi_client.get_top_headlines(
+                category='business',
+                language='en',
+                page_size=10
+            )
+            
+            if top_news['status'] == 'ok' and top_news['totalResults'] > 0:
+                for article in top_news['articles'][:5]:
+                    titulo_lower = article['title'].lower()
+                    # Filtrar noticias relevantes para acero/logística/comercio
+                    if any(word in titulo_lower for word in ['steel', 'metal', 'iron', 'shipping', 'trade', 'export', 'import', 'tariff', 'china', 'supply chain', 'port', 'construction', 'infrastructure', 'mining']):
+                        noticias_detectadas.append({
+                            "titulo": article['title'],
+                            "descripcion": article['description'] or article['title'],
+                            "fuente": article['source']['name'],
+                            "fecha": article['publishedAt'],
+                            "url": article['url'],
+                            "tipo": "Crisis" if any(w in titulo_lower for w in ['crisis', 'war', 'strike', 'shortage', 'disruption']) else "Oportunidad",
+                            "keyword": "global business"
+                        })
+        except Exception as e:
+            print(f"Error en top headlines: {e}")
+        
+        # 2. BÚSQUEDAS ESPECÍFICAS - CRISIS
+        keywords_crisis = [
+            'steel industry crisis',
+            'shipping disruption', 
+            'trade war tariff',
+            'supply chain shortage'
+        ]
+        
+        for keyword in keywords_crisis[:2]:
             try:
                 response = newsapi_client.get_everything(
                     q=keyword,
                     from_param=fecha_desde,
                     language='en',
-                    sort_by='relevancy',
-                    page_size=5
+                    sort_by='publishedAt',
+                    page_size=3
                 )
                 
                 if response['status'] == 'ok' and response['totalResults'] > 0:
-                    for article in response['articles'][:2]:
+                    for article in response['articles'][:1]:
                         noticias_detectadas.append({
                             "titulo": article['title'],
                             "descripcion": article['description'] or article['title'],
@@ -93,24 +115,29 @@ def obtener_noticias_reales_newsapi():
                             "tipo": "Crisis",
                             "keyword": keyword
                         })
-                
-                time.sleep(0.5)  # Evitar límite de rate
-            except:
+            except Exception as e:
+                print(f"Error en keyword {keyword}: {e}")
                 continue
         
-        # Buscar noticias de oportunidades
+        # 3. BÚSQUEDAS ESPECÍFICAS - OPORTUNIDADES
+        keywords_oportunidad = [
+            'infrastructure project',
+            'mining boom',
+            'construction growth'
+        ]
+        
         for keyword in keywords_oportunidad[:2]:
             try:
                 response = newsapi_client.get_everything(
                     q=keyword,
                     from_param=fecha_desde,
                     language='en',
-                    sort_by='relevancy',
-                    page_size=5
+                    sort_by='publishedAt',
+                    page_size=3
                 )
                 
                 if response['status'] == 'ok' and response['totalResults'] > 0:
-                    for article in response['articles'][:2]:
+                    for article in response['articles'][:1]:
                         noticias_detectadas.append({
                             "titulo": article['title'],
                             "descripcion": article['description'] or article['title'],
@@ -120,15 +147,15 @@ def obtener_noticias_reales_newsapi():
                             "tipo": "Oportunidad",
                             "keyword": keyword
                         })
-                
-                time.sleep(0.5)
-            except:
+            except Exception as e:
+                print(f"Error en keyword {keyword}: {e}")
                 continue
         
-        return noticias_detectadas[:10]  # Máximo 10 noticias
+        print(f"✅ NewsAPI: {len(noticias_detectadas)} noticias obtenidas")
+        return noticias_detectadas[:15]  # Máximo 15 noticias
         
     except Exception as e:
-        st.warning(f"Error obteniendo noticias: {str(e)}")
+        print(f"❌ Error NewsAPI: {str(e)}")
         return []
 
 def obtener_datos_economicos_worldbank():

@@ -7,3 +7,4 @@ venv/
 ngrok.exe
 ngrok.zip
 *.zip
+.streamlit/secrets.toml
