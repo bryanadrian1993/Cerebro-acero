@@ -1064,10 +1064,10 @@ with st.sidebar:
                 # Traducir al español si está en inglés
                 titulo_display = traducir_a_espanol_simple(titulo_original, idioma) if idioma == 'en' else titulo_original
                 
-                # Crear link con onclick JavaScript para abrir en nueva ventana
+                # Usar HTML simple con target="_blank"
                 st.markdown(
-                    f'<a href="{link_url}" onclick="window.open(this.href); return false;" '
-                    f'style="color: #1f77b4; text-decoration: none; cursor: pointer;">'
+                    f'<a href="{link_url}" target="_blank" rel="noopener noreferrer" '
+                    f'style="color: #1f77b4; text-decoration: underline;">'
                     f'• {titulo_display}</a> '
                     f'<span style="color: #888;">({fuente})</span>',
                     unsafe_allow_html=True
