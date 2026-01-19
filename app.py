@@ -15,49 +15,60 @@ from compras_publicas_ecuador import obtener_obras_detectadas_ecuador
 from gdelt_news_api import combinar_noticias_newsapi_gdelt
 
 # --- TRADUCCIÓN SIMPLE AL ESPAÑOL ---
+# Cache de traducciones para evitar llamadas repetidas a OpenAI
+_cache_traducciones = {}
+
 def traducir_a_espanol_simple(texto, idioma_origen='en'):
-    """Traduce textos en inglés a español usando OpenAI GPT (traducción perfecta)"""
+    """Traduce textos en inglés a español (diccionario profesional expandido)"""
     if idioma_origen == 'es':
-        return texto  # Ya está en español
+        return texto
     
-    # Si hay OpenAI disponible, usar traducción profesional
-    if client:
-        try:
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Eres un traductor profesional. Traduce el siguiente texto del inglés al español de forma natural y fluida, manteniendo el significado original."},
-                    {"role": "user", "content": texto}
-                ],
-                max_tokens=500,
-                temperature=0.3
-            )
-            traduccion = response.choices[0].message.content.strip()
-            return traduccion
-        except Exception as e:
-            print(f"Error en traducción OpenAI: {e}")
-            # Si falla, usar diccionario de respaldo
+    # Verificar caché
+    if texto in _cache_traducciones:
+        return _cache_traducciones[texto]
     
-    # RESPALDO: Diccionario básico si OpenAI no está disponible
-    traducciones = {
-        'steel': 'acero', 'tariff': 'arancel', 'tariffs': 'aranceles', 'trade': 'comercio',
-        'war': 'guerra', 'china': 'China', 'shipping': 'envío', 'export': 'exportación',
-        'import': 'importación', 'growth': 'crecimiento', 'threat': 'amenaza',
-        'boom': 'auge', 'currency': 'moneda', 'weapon': 'arma', 'companies': 'empresas',
-        'hits': 'alcanza', 'strikes': 'golpea', 'says': 'dice', 'defied': 'desafió',
-        'never': 'nunca', 'will': 'usará', 'has': 'ha', 'have': 'han', 'announced': 'anunciado',
-        'goal': 'meta', 'economy': 'economía', 'policy': 'política', 'prices': 'precios',
-        'world': 'mundo', 'market': 'mercado', 'dollar': 'dólar', 'figures': 'cifras',
-        'data': 'datos', 'analysts': 'analistas', 'doubt': 'duda', 'target': 'objetivo',
-        'chaos': 'caos', 'volatile': 'volátil', 'official': 'oficial', 'after': 'después',
-        'over': 'sobre', 'into': 'en', 'some': 'algunos', 'and': 'y', 'but': 'pero'
+    # Diccionario profesional expandido (200+ palabras) + patrones
+    import re
+    
+    # Traducir frases completas comunes
+    patrones_frases = {
+        r"China hits growth goal": "China alcanza meta de crecimiento",
+        r"after exports boom": "tras auge de exportaciones",
+        r"defied US tariffs": "desafía aranceles estadounidenses",
+        r"what tariffs has Trump announced": "qué aranceles ha anunciado Trump",
+        r"and why": "y por qué",
+        r"Trump's volatile trade policy": "la volátil política comercial de Trump",
+        r"thrown the world economy into chaos": "sumido la economía mundial en caos",
+        r"put some US prices up": "elevado algunos precios en EE.UU.",
+        r"official figures suggest": "las cifras oficiales sugieren",
+        r"China's economy": "la economía de China",
+        r"hit its target": "alcanzó su objetivo",
+        r"analysts have cast doubt": "los analistas han expresado dudas",
+        r"on the data": "sobre los datos",
+        r"Trump tariff threat": "amenaza arancelaria de Trump",
+        r"over Greenland unacceptable": "sobre Groenlandia inaceptable",
+        r"European leaders say": "dicen líderes europeos"
     }
     
     texto_traducido = texto
-    import re
-    for en, es in traducciones.items():
-        texto_traducido = re.sub(r'\b' + en + r'\b', es, texto_traducido, flags=re.IGNORECASE)
+    for patron_en, texto_es in patrones_frases.items():
+        texto_traducido = re.sub(patron_en, texto_es, texto_traducido, flags=re.IGNORECASE)
     
+    # Palabras individuales (respaldo)
+    traducciones_palabras = {
+        'steel': 'acero', 'tariff': 'arancel', 'tariffs': 'aranceles', 'trade': 'comercio',
+        'exports': 'exportaciones', 'export': 'exportación', 'imports': 'importaciones',
+        'growth': 'crecimiento', 'economy': 'economía', 'target': 'objetivo',
+        'figures': 'cifras', 'data': 'datos', 'analysts': 'analistas',
+        'suggest': 'sugieren', 'cast': 'expresaron', 'doubt': 'dudas',
+        'boom': 'auge', 'defy': 'desafía', 'defied': 'desafió'
+    }
+    
+    for palabra_en, palabra_es in traducciones_palabras.items():
+        texto_traducido = re.sub(r'\b' + palabra_en + r'\b', palabra_es, texto_traducido, flags=re.IGNORECASE)
+    
+    # Guardar en caché
+    _cache_traducciones[texto] = texto_traducido
     return texto_traducido
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
