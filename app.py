@@ -1060,18 +1060,15 @@ with st.sidebar:
             st.markdown(f"**Categoría:** {info['categoria']}")
         st.markdown(f"**Descripción:** {info['descripcion']}")
         
-        # Mostrar todas las noticias relacionadas
-        if len(info.get("noticias", [])) > 1:
+        # Mostrar todas las noticias relacionadas (incluso si hay solo 1)
+        if len(info.get("noticias", [])) >= 1:
             st.markdown("---")
-            st.markdown("**Noticias Relacionadas:**")
+            st.markdown("**📰 Fuentes:**")
             for n in info["noticias"]:
                 link_url = n.get('url', '#')
                 fuente = n.get('fuente', 'Desconocido')
                 idioma = n.get('idioma', 'es')
-                titulo_original = n['titulo']
-                
-                # DEBUG: Ver qué URL llega
-                # st.write(f"DEBUG URL: {link_url}")
+                titulo_original = n.get('titulo', 'Sin título')
                 
                 # Traducir al español si está en inglés
                 titulo_display = traducir_a_espanol_simple(titulo_original, idioma) if idioma == 'en' else titulo_original
@@ -1080,7 +1077,7 @@ with st.sidebar:
                 st.markdown(
                     f'<a href="{link_url}" target="_blank" rel="noopener noreferrer" '
                     f'style="color: #1f77b4; text-decoration: underline;">'
-                    f'• {titulo_display}</a> '
+                    f'🔗 {titulo_display}</a> '
                     f'<span style="color: #888;">({fuente})</span>',
                     unsafe_allow_html=True
                 )
