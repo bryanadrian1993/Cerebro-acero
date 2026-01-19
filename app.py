@@ -294,12 +294,7 @@ def obtener_noticias_mundiales():
     return noticias_relevantes
 
 def generar_escenarios_desde_noticias():
-    """Genera lista de escenarios basados en noticias reales de NewsAPI"""
-    
-    noticias = obtener_noticias_mundiales()
-    
-    # Siempre incluir Mercado Normal
-    escenariosescenarios SOLO con noticias relevantes - Sin relleno artificial"""
+    """Genera escenarios SOLO con noticias relevantes - Sin relleno artificial"""
     
     noticias = obtener_noticias_mundiales()
     
@@ -337,7 +332,12 @@ def generar_escenarios_desde_noticias():
                 "relevancia": noticia.get("relevancia", "MEDIA"),
                 "es_real": True,
                 "noticias": [noticia],
-                "ultima_actualizacion": datetime.now().strftime('%Y-%m-%d %H:%M')--
+                "ultima_actualizacion": datetime.now().strftime('%Y-%m-%d %H:%M')
+            }
+    
+    return escenarios, info_escenarios
+
+# --- CSS PERSONALIZADO TEMA OSCURO ---
 st.markdown("""
 <style>
     /* Fondo oscuro global */
@@ -799,21 +799,11 @@ def ejecutar_cerebro_acero(escenario):
         "fase4": fase4
     }
 
+# --- INTERFAZ GRÁFICA ---
 # Auto-refresh cada 10 minutos (600 segundos)
-import time as time_module
 refresh_interval = 600  # 10 minutos
 
 # Generar escenarios desde noticias mundiales (se actualiza automáticamente)
-escenarios_disponibles, info_escenarios = generar_escenarios_desde_noticias()
-
-# Configurar auto-refresh
-st.markdown(f"""
-<script>
-    setTimeout(function(){{
-        window.location.reload();
-    }}, {refresh_interval * 1000});
-</script>
-""", unsafe_allow_html=True
 escenarios_disponibles, info_escenarios = generar_escenarios_desde_noticias()
 
 # Sidebar con menú de navegación
