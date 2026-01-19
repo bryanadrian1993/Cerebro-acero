@@ -1058,7 +1058,14 @@ with st.sidebar:
             
             st.markdown(f"**📰 Noticia:** {titulo_noticia}")
             st.markdown(f"**Categoría:** {info['categoria']}")
-        st.markdown(f"**Descripción:** {info['descripcion']}")
+        
+        # Traducir descripción si está en inglés
+        descripcion = info['descripcion']
+        idioma_desc = info.get('idioma', 'es')
+        if idioma_desc == 'en':
+            descripcion = traducir_a_espanol_simple(descripcion, 'en')
+        
+        st.markdown(f"**Descripción:** {descripcion}")
         
         # Mostrar todas las noticias relacionadas (incluso si hay solo 1)
         if len(info.get("noticias", [])) >= 1:
