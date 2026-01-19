@@ -38,9 +38,9 @@ def traducir_a_espanol_simple(texto, idioma_origen='en'):
     if gemini_client:
         try:
             from google import genai
-            prompt = f"Translate to Spanish only (no extra comments): {texto}"
+            prompt = f"Translate this text to Spanish (only output the translation, no explanations): {texto}"
             response = gemini_client.models.generate_content(
-                model='gemini-2.0-flash-exp',
+                model='gemini-1.5-flash',
                 contents=prompt
             )
             resultado = response.text.strip()
@@ -50,9 +50,11 @@ def traducir_a_espanol_simple(texto, idioma_origen='en'):
             if resultado.startswith("'") and resultado.endswith("'"):
                 resultado = resultado[1:-1]
             _cache_traducciones[texto] = resultado
+            print(f"[GEMINI] Traducido: {texto[:50]}... -> {resultado[:50]}...")
             return resultado
         except Exception as e:
             # Si falla Gemini, continuar con OpenAI
+            print(f"[ERROR GEMINI] {str(e)}")
             pass
     
     # 🥈 ESTRATEGIA 2: OpenAI GPT-3.5 (fallback si hay crédito)
@@ -138,8 +140,7 @@ except:
     # Si no está en Cloud, busca en secrets.toml local (NO se sube a GitHub)
     NEWSAPI_KEY = ""
     OPENAI_API_KEY = ""
-    GEMINI_API_KEY = ""
-    st.warning("⚠️ Configure las API keys en .streamlit/secrets.toml (local) o en Streamlit Cloud Settings")
+    GEMINI_API_KEY = "AIzaSyCygQTij-aojvrYB4xY02feLngZp_kTy70"
 
 # WorldBank API (No requiere key - pública)
 WORLDBANK_API_ENABLED = True
