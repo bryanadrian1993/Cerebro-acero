@@ -444,6 +444,7 @@ def generar_escenarios_desde_noticias():
                 "categoria": noticia["categoria"],
                 "titulo_noticia": noticia["titulo"],
                 "fuente": noticia.get("fuente", "NewsAPI"),
+                "idioma": noticia.get("idioma", "es"),  # ⭐ AGREGAR IDIOMA
                 "relevancia": noticia.get("relevancia", "MEDIA"),
                 "es_real": True,
                 "noticias": [noticia],
@@ -1049,7 +1050,13 @@ with st.sidebar:
     # Descripción del escenario
     with st.expander("ℹ️ Detalles del Escenario"):
         if "titulo_noticia" in info:
-            st.markdown(f"**📰 Noticia:** {info['titulo_noticia']}")
+            # Traducir título si está en inglés
+            titulo_noticia = info['titulo_noticia']
+            idioma_titulo = info.get('idioma', 'es')
+            if idioma_titulo == 'en':
+                titulo_noticia = traducir_a_espanol_simple(titulo_noticia, 'en')
+            
+            st.markdown(f"**📰 Noticia:** {titulo_noticia}")
             st.markdown(f"**Categoría:** {info['categoria']}")
         st.markdown(f"**Descripción:** {info['descripcion']}")
         
