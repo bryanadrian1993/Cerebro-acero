@@ -593,6 +593,31 @@ def consultar_gpt(producto, stock, minimo, escenario):
             return f"✅ OK: Stock saludable, revisar en 30 días"
 
 # ========================================
+# INTEGRACIÓN SAP (Preparada para el futuro)
+# ========================================
+
+def cargar_inventario():
+    """
+    Carga inventario desde SAP si está configurado, sino usa simulado
+    
+    FUTURO: Se conectará automáticamente a SAP cuando configures credenciales
+    """
+    try:
+        # Intentar importar conector SAP
+        from sap_connector import get_datos_empresa, usar_datos_reales
+        
+        if usar_datos_reales():
+            # Usar datos REALES de SAP
+            datos_sap = get_datos_empresa()
+            return datos_sap["inventario"]
+        else:
+            # Modo simulado
+            return pd.read_csv("inventario_simulado.csv")
+    except:
+        # Fallback: archivo CSV simulado
+        return pd.read_csv("inventario_simulado.csv")
+
+# ========================================
 # ALGORITMO: EL CEREBRO DE ACERO
 # ========================================
 
@@ -644,7 +669,7 @@ def fase1_deteccion_oportunidad(escenario):
     
     # 2. Análisis de Inventario Interno (Regla 5)
     try:
-        df_inv = pd.read_csv("inventario_simulado.csv")
+        df_inv = cargar_inventario()  # Usa SAP si está configurado
         
         for obra in obras_activas:
             for producto in obra["demanda"]:

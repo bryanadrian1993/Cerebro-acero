@@ -2,3 +2,6 @@ streamlit
 openai
 plotly
 newsapi-python
+pandas
+requests
+pyrfc
