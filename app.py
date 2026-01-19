@@ -400,6 +400,8 @@ def obtener_noticias_mundiales():
                 "escenario": clasificacion['escenario'],
                 "descripcion": noticia['descripcion'][:150] if noticia['descripcion'] else noticia['titulo'][:150],
                 "fuente": noticia.get('fuente', 'NewsAPI'),
+                "url": noticia.get('url', '#'),  # ⭐ AGREGAR URL AQUÍ
+                "idioma": noticia.get('idioma', 'en'),  # ⭐ Y EL IDIOMA
                 "relevancia": clasificacion['relevancia'],
                 "es_real": True
             })
