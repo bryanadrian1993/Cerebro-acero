@@ -113,6 +113,198 @@ def traducir_a_espanol_simple(texto, idioma_origen='en'):
     _cache_traducciones[texto] = texto_traducido
     return texto_traducido
 
+# === FUNCIONES DE INTELIGENCIA ARTIFICIAL CON GEMINI ===
+
+def analizar_escenario_con_ia(titulo_escenario, descripcion, noticias):
+    """Analiza un escenario y genera explicación, impacto y urgencia usando Gemini"""
+    if not gemini_client:
+        return None
+    
+    try:
+        contexto_noticias = "\n".join([f"- {n.get('titulo', '')[:100]}" for n in noticias[:3]])
+        prompt = f"""Eres un analista experto en logística y comercio de acero.
+
+ESCENARIO: {titulo_escenario}
+DESCRIPCIÓN: {descripcion}
+NOTICIAS RECIENTES:
+{contexto_noticias}
+
+Genera un análisis en formato JSON con:
+1. "explicacion": Por qué este escenario es crítico (2-3 oraciones)
+2. "impacto_negocio": Impacto específico en Import Aceros (costos, tiempos, disponibilidad)
+3. "urgencia": "ALTA" | "MEDIA" | "BAJA"
+4. "probabilidad": Probabilidad de que ocurra (0-100%)
+
+Responde SOLO con JSON válido, sin markdown."""
+
+        response = gemini_client.models.generate_content(
+            model='gemini-flash-latest',
+            contents=prompt
+        )
+        
+        import json
+        resultado = json.loads(response.text.strip().replace('```json', '').replace('```', ''))
+        return resultado
+    except:
+        return None
+
+def generar_recomendaciones(titulo_escenario, analisis, inventario_df=None):
+    """Genera recomendaciones accionables basadas en el escenario"""
+    if not gemini_client:
+        return []
+    
+    try:
+        inventario_info = ""
+        if inventario_df is not None and len(inventario_df) > 0:
+            inventario_info = f"\nINVENTARIO ACTUAL: {len(inventario_df)} SKUs, Stock Total: {inventario_df['Stock_Actual'].sum():.0f} tons"
+        
+        prompt = f"""Eres un asesor estratégico de Import Aceros S.A.
+
+ESCENARIO: {titulo_escenario}
+URGENCIA: {analisis.get('urgencia', 'MEDIA') if analisis else 'MEDIA'}
+{inventario_info}
+
+Genera 3 recomendaciones ACCIONABLES y ESPECÍFICAS.
+Cada recomendación debe incluir:
+- Acción concreta (qué hacer)
+- Razón (por qué hacerlo)
+- Timing (cuándo ejecutar)
+
+Formato JSON:
+[
+  {{"accion": "...", "razon": "...", "timing": "..."}},
+  ...
+]
+
+Responde SOLO con el array JSON, sin markdown."""
+
+        response = gemini_client.models.generate_content(
+            model='gemini-flash-latest',
+            contents=prompt
+        )
+        
+        import json
+        recomendaciones = json.loads(response.text.strip().replace('```json', '').replace('```', ''))
+        return recomendaciones if isinstance(recomendaciones, list) else []
+    except:
+        return []
+
+def generar_resumen_ejecutivo(escenarios_activos):
+    """Genera resumen ejecutivo de los escenarios más importantes del día"""
+    if not gemini_client or not escenarios_activos:
+        return {"titulo": "Sin información suficiente", "puntos_clave": [], "conclusion": ""}
+    
+    try:
+        escenarios_texto = "\n".join([
+            f"- {esc['titulo']}: {esc.get('descripcion', '')[:150]}"
+            for esc in escenarios_activos[:5]
+        ])
+        
+        prompt = f"""Eres el CEO de Import Aceros S.A. y necesitas un briefing ejecutivo de 2 minutos.
+
+ESCENARIOS ACTIVOS HOY:
+{escenarios_texto}
+
+Genera un resumen ejecutivo con:
+1. "titulo": Título del briefing (ej: "3 Riesgos Críticos en Cadena de Suministro")
+2. "puntos_clave": Array de 3-5 puntos CONCISOS (máx 15 palabras c/u)
+3. "conclusion": Mensaje final estratégico (2 oraciones)
+
+Formato JSON. Responde SOLO con JSON, sin markdown."""
+
+        response = gemini_client.models.generate_content(
+            model='gemini-flash-latest',
+            contents=prompt
+        )
+        
+        import json
+        resumen = json.loads(response.text.strip().replace('```json', '').replace('```', ''))
+        return resumen
+    except:
+        return {"titulo": "Análisis en curso", "puntos_clave": [], "conclusion": ""}
+
+def extraer_insights_noticias(noticias):
+    """Extrae países, empresas y productos mencionados en las noticias"""
+    if not gemini_client or not noticias:
+        return {"paises": [], "empresas": [], "productos": []}
+    
+    try:
+        titulos = "\n".join([f"- {n.get('titulo', '')}" for n in noticias[:10]])
+        
+        prompt = f"""Analiza estas noticias de la industria del acero:
+
+{titulos}
+
+Extrae:
+1. "paises": Países mencionados (ISO codes o nombres)
+2. "empresas": Empresas relevantes mencionadas
+3. "productos": Tipos de acero/productos mencionados (HRC, CRC, galvanizado, etc)
+
+Formato JSON:
+{{
+  "paises": ["China", "USA", ...],
+  "empresas": ["ArcelorMittal", ...],
+  "productos": ["HRC", "CRC", ...]
+}}
+
+Responde SOLO con JSON, sin markdown."""
+
+        response = gemini_client.models.generate_content(
+            model='gemini-flash-latest',
+            contents=prompt
+        )
+        
+        import json
+        insights = json.loads(response.text.strip().replace('```json', '').replace('```', ''))
+        return insights
+    except:
+        return {"paises": [], "empresas": [], "productos": []}
+
+def responder_pregunta_chatbot(pregunta, contexto_inventario, contexto_noticias):
+    """Chatbot que responde preguntas usando contexto de inventario y noticias"""
+    if not gemini_client:
+        return "Lo siento, el chatbot no está disponible en este momento."
+    
+    try:
+        prompt = f"""Eres el asistente IA de Import Aceros S.A., especializado en logística de acero.
+
+CONTEXTO INVENTARIO:
+{contexto_inventario}
+
+CONTEXTO NOTICIAS RECIENTES:
+{contexto_noticias}
+
+PREGUNTA DEL USUARIO: {pregunta}
+
+Responde de manera CONCISA y PROFESIONAL (máximo 3 oraciones).
+Si no tienes información suficiente, dilo claramente."""
+
+        response = gemini_client.models.generate_content(
+            model='gemini-flash-latest',
+            contents=prompt
+        )
+        
+        return response.text.strip()
+    except Exception as e:
+        return f"Error al procesar pregunta: {str(e)}"
+
+def calcular_nivel_riesgo(analisis):
+    """Determina nivel de riesgo visual basado en análisis de IA"""
+    if not analisis:
+        return "🟡", "MEDIA"
+    
+    urgencia = analisis.get('urgencia', 'MEDIA').upper()
+    probabilidad = analisis.get('probabilidad', 50)
+    
+    if urgencia == "ALTA" and probabilidad > 60:
+        return "🔴", "CRÍTICA"
+    elif urgencia == "ALTA" or probabilidad > 70:
+        return "🟠", "ALTA"
+    elif urgencia == "MEDIA" or probabilidad > 40:
+        return "🟡", "MEDIA"
+    else:
+        return "🟢", "BAJA"
+
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(
     page_title="CEREBRO DE ACERO - Import Aceros S.A. | Sistema de Inteligencia Logística v1.0",
@@ -1079,6 +1271,48 @@ with st.sidebar:
     except Exception as e:
         st.caption(f"⚠️ APIs premium en standby: {str(e)}")
     
+    # === CHATBOT IA ===
+    st.markdown("---")
+    if gemini_client:
+        st.markdown("### 🤖 Asistente IA")
+        
+        # Input de pregunta
+        pregunta_usuario = st.text_input(
+            "Pregunta al Cerebro:",
+            placeholder="Ej: ¿Cuánto inventario tengo de HRC?",
+            key="chatbot_input"
+        )
+        
+        if st.button("💬 Consultar", use_container_width=True):
+            if pregunta_usuario:
+                with st.spinner("Analizando..."):
+                    # Preparar contexto de inventario
+                    contexto_inv = f"SKUs totales: {len(df)}, Stock total: {df['Stock_Actual'].sum():.0f} tons"
+                    
+                    # Preparar contexto de noticias
+                    titulos_noticias = []
+                    for esc_n in escenarios_disponibles[:3]:
+                        if esc_n != "Sin Alertas Activas":
+                            for n in info_escenarios[esc_n].get('noticias', [])[:2]:
+                                titulos_noticias.append(n.get('titulo', '')[:80])
+                    contexto_news = "\n".join(titulos_noticias[:5])
+                    
+                    # Obtener respuesta
+                    respuesta = responder_pregunta_chatbot(
+                        pregunta_usuario,
+                        contexto_inv,
+                        contexto_news
+                    )
+                    
+                    st.markdown(f"""
+                    <div style="background: #1e293b; padding: 15px; border-radius: 10px; 
+                         border-left: 4px solid #3b82f6;">
+                        <p style="margin:0; color: #e2e8f0;">{respuesta}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.warning("Por favor escribe una pregunta")
+    
     st.markdown("---")
     
     # Contador de alertas
@@ -1095,6 +1329,39 @@ with st.sidebar:
     
     # Mostrar información del escenario seleccionado
     info = info_escenarios[escenario]
+    
+    # === ANÁLISIS INTELIGENTE CON IA ===
+    if gemini_client and escenario != "Sin Alertas Activas":
+        with st.spinner("🤖 Analizando escenario con IA..."):
+            analisis_ia = analizar_escenario_con_ia(
+                escenario, 
+                info.get('descripcion', ''),
+                info.get('noticias', [])
+            )
+            if analisis_ia:
+                icono_riesgo, nivel_riesgo = calcular_nivel_riesgo(analisis_ia)
+                
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                     padding: 15px; border-radius: 10px; margin: 10px 0;">
+                    <h4 style="margin:0; color:white;">{icono_riesgo} Análisis IA - Riesgo: {nivel_riesgo}</h4>
+                    <p style="margin:5px 0; color:#f0f0f0;"><strong>Urgencia:</strong> {analisis_ia.get('urgencia', 'N/A')} | 
+                    <strong>Probabilidad:</strong> {analisis_ia.get('probabilidad', 0)}%</p>
+                    <p style="margin:5px 0; color:white;">{analisis_ia.get('explicacion', '')}</p>
+                    <p style="margin:5px 0; font-size:0.9em; color:#e0e0e0;">
+                    <strong>Impacto en Negocio:</strong> {analisis_ia.get('impacto_negocio', '')}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Generar recomendaciones
+                recomendaciones = generar_recomendaciones(escenario, analisis_ia, df)
+                if recomendaciones:
+                    st.markdown("### 💡 Recomendaciones Automáticas")
+                    for i, rec in enumerate(recomendaciones, 1):
+                        with st.expander(f"🎯 Recomendación {i}: {rec.get('accion', '')[:50]}...", expanded=(i==1)):
+                            st.markdown(f"**Acción:** {rec.get('accion', '')}")
+                            st.markdown(f"**Razón:** {rec.get('razon', '')}")
+                            st.markdown(f"**⏰ Timing:** {rec.get('timing', '')}")
     
     # Estado del escenario con badge
     if info["tipo"] == "Crisis":
@@ -1159,7 +1426,79 @@ with st.sidebar:
         st.rerun()
 
 # Header principal
-st.markdown("# Tablero")
+st.markdown("# 🧠 Cerebro de Acero - Dashboard Ejecutivo")
+
+# === RESUMEN EJECUTIVO CON IA ===
+if gemini_client and len(escenarios_disponibles) > 0 and escenarios_disponibles[0] != "Sin Alertas Activas":
+    with st.spinner("📊 Generando briefing ejecutivo..."):
+        resumen_exec = generar_resumen_ejecutivo([
+            {"titulo": esc, **info_escenarios[esc]} 
+            for esc in escenarios_disponibles if esc != "Sin Alertas Activas"
+        ])
+        
+        if resumen_exec and resumen_exec.get('puntos_clave'):
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+                 padding: 20px; border-radius: 15px; margin-bottom: 20px; color: white;">
+                <h2 style="margin:0 0 15px 0;">📋 {resumen_exec.get('titulo', 'Briefing del Día')}</h2>
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px;">
+                    <ul style="margin:0; padding-left: 20px;">
+            """ + "".join([f"<li style='margin: 8px 0; font-size: 1.05em;'>{punto}</li>" 
+                          for punto in resumen_exec.get('puntos_clave', [])]) + f"""
+                    </ul>
+                </div>
+                <p style="margin:15px 0 0 0; font-style: italic; font-size: 0.95em;">
+                💡 <strong>Conclusión:</strong> {resumen_exec.get('conclusion', '')}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+# === INSIGHTS DE NOTICIAS ===
+if gemini_client and len(escenarios_disponibles) > 0:
+    all_noticias = []
+    for esc_nombre in escenarios_disponibles:
+        if esc_nombre != "Sin Alertas Activas":
+            all_noticias.extend(info_escenarios[esc_nombre].get('noticias', []))
+    
+    if all_noticias:
+        with st.spinner("🔍 Extrayendo insights..."):
+            insights = extraer_insights_noticias(all_noticias)
+            
+            if any(insights.values()):
+                col_i1, col_i2, col_i3 = st.columns(3)
+                
+                with col_i1:
+                    if insights.get('paises'):
+                        st.markdown("""
+                        <div style="background: #1e3a8a; padding: 15px; border-radius: 10px; text-align: center;">
+                            <h4 style="color: white; margin:0 0 10px 0;">🌍 Países Clave</h4>
+                            <p style="color: #93c5fd; font-size: 1.1em; margin:0;">
+                        """ + ", ".join(insights['paises'][:5]) + """
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                
+                with col_i2:
+                    if insights.get('empresas'):
+                        st.markdown("""
+                        <div style="background: #065f46; padding: 15px; border-radius: 10px; text-align: center;">
+                            <h4 style="color: white; margin:0 0 10px 0;">🏢 Empresas Mencionadas</h4>
+                            <p style="color: #86efac; font-size: 1.1em; margin:0;">
+                        """ + ", ".join(insights['empresas'][:5]) + """
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                
+                with col_i3:
+                    if insights.get('productos'):
+                        st.markdown("""
+                        <div style="background: #7c2d12; padding: 15px; border-radius: 10px; text-align: center;">
+                            <h4 style="color: white; margin:0 0 10px 0;">🔩 Productos Afectados</h4>
+                            <p style="color: #fdba74; font-size: 1.1em; margin:0;">
+                        """ + ", ".join(insights['productos'][:5]) + """
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
 st.markdown("---")
 
 # SECCIÓN NUEVA: Datos Premium en Tiempo Real
