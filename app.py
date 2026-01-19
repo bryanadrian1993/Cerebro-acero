@@ -185,77 +185,131 @@ def obtener_datos_economicos_worldbank():
     return {"precio_acero_index": 100, "tendencia": "ESTABLE"}
 
 def clasificar_noticia_en_escenario(noticia):
-    """Clasifica una noticia SOLO si tiene impacto directo en el negocio"""
+    """Clasifica CUALQUIER noticia que pueda afectar el negocio de acero"""
     
     titulo = noticia['titulo'].lower()
     descripcion = noticia.get('descripcion', '').lower()
     keyword = noticia.get('keyword', '').lower()
     contenido = f"{titulo} {descripcion} {keyword}"
     
-    # CRITERIO ESTRICTO: Solo alertar si afecta directamente acero/logística/Ecuador
+    # CRITERIO AMPLIO: Detectar cualquier impacto potencial
     
     # 1. CRISIS LOGÍSTICA (afecta importación)
-    if any(word in contenido for word in ['steel', 'iron', 'metal']) and \
-       any(word in contenido for word in ['shipping', 'port', 'strike', 'delay', 'disruption', 'blockage']):
+    if any(word in contenido for word in ['shipping', 'port', 'strike', 'delay', 'disruption', 'blockage', 'freight', 'container', 'vessel', 'suez', 'panama', 'red sea']):
         return {
-            "escenario": "Crisis Fletes Global",
+            "escenario": "Crisis Logística Global",
             "categoria": "Logística",
             "impacto": "Crisis",
             "relevancia": "ALTA"
         }
     
     # 2. GUERRA COMERCIAL / ARANCELES (afecta precios)
-    if any(word in contenido for word in ['steel', 'iron', 'metal']) and \
-       any(word in contenido for word in ['tariff', 'trade war', 'sanction', 'embargo', 'import ban']):
+    if any(word in contenido for word in ['tariff', 'trade war', 'sanction', 'embargo', 'import ban', 'export restriction', 'duty', 'customs']):
         return {
-            "escenario": "Alerta Salvaguardia",
+            "escenario": "Guerra Comercial",
             "categoria": "Aranceles",
             "impacto": "Crisis",
             "relevancia": "ALTA"
         }
     
-    # 3. CRISIS PROVEEDOR (afecta suministro)
-    if any(proveedor in contenido for proveedor in ['china', 'turkey', 'india', 'korea']) and \
-       any(word in contenido for word in ['steel', 'iron', 'metal']) and \
-       any(word in contenido for word in ['shortage', 'production cut', 'factory close', 'earthquake']):
-        return {
-            "escenario": "Crisis Proveedor",
-            "categoria": "Suministro",
-            "impacto": "Crisis",
-            "relevancia": "ALTA"
-        }
+    # 3. ACERO ESPECÍFICO (cualquier mención)
+    if any(word in contenido for word in ['steel', 'iron', 'metal']) and \
+       any(word in contenido for word in ['price', 'shortage', 'surplus', 'production', 'demand', 'supply', 'market']):
+        if any(word in contenido for word in ['rise', 'surge', 'increase', 'up', 'high', 'shortage', 'crisis']):
+            return {
+                "escenario": "Crisis Mercado Acero",
+                "categoria": "Mercado",
+                "impacto": "Crisis",
+                "relevancia": "ALTA"
+            }
+        else:
+            return {
+                "escenario": "Movimiento Mercado Acero",
+                "categoria": "Mercado",
+                "impacto": "Oportunidad",
+                "relevancia": "MEDIA"
+            }
     
-    # 4. BOOM ECUADOR (oportunidad directa)
-    if 'ecuador' in contenido and \
-       any(word in contenido for word in ['mining', 'oil', 'petroleum', 'infrastructure', 'construction', 'project', 'investment']):
-        return {
-            "escenario": "Boom Ecuador",
-            "categoria": "Oportunidad Local",
-            "impacto": "Oportunidad",
-            "relevancia": "ALTA"
-        }
+    # 4. PROVEEDORES CLAVE (China, Turquía, India, Corea)
+    if any(proveedor in contenido for proveedor in ['china', 'chinese', 'turkey', 'turkish', 'india', 'indian', 'korea', 'korean']):
+        if any(word in contenido for word in ['crisis', 'earthquake', 'disaster', 'shutdown', 'close', 'protest', 'conflict']):
+            return {
+                "escenario": "Crisis en Proveedor Clave",
+                "categoria": "Suministro",
+                "impacto": "Crisis",
+                "relevancia": "ALTA"
+            }
+        else:
+            return {
+                "escenario": "Evento en Proveedor",
+                "categoria": "Suministro",
+                "impacto": "Oportunidad",
+                "relevancia": "MEDIA"
+            }
     
-    # 5. AUMENTO DE PRECIO ACERO (afecta margen)
-    if any(word in contenido for word in ['steel price', 'iron ore price', 'metal price']) and \
-       any(word in contenido for word in ['surge', 'rise', 'increase', 'rally', 'soar']):
-        return {
-            "escenario": "Escalada Precios",
-            "categoria": "Precios",
-            "impacto": "Crisis",
-            "relevancia": "MEDIA"
-        }
+    # 5. ECUADOR / LATINOAMÉRICA (mercado local)
+    if any(word in contenido for word in ['ecuador', 'latin america', 'south america', 'andean']):
+        if any(word in contenido for word in ['mining', 'oil', 'petroleum', 'infrastructure', 'construction', 'project', 'investment', 'boom']):
+            return {
+                "escenario": "Oportunidad Ecuador/Región",
+                "categoria": "Mercado Local",
+                "impacto": "Oportunidad",
+                "relevancia": "ALTA"
+            }
+        else:
+            return {
+                "escenario": "Evento Regional",
+                "categoria": "Mercado Local",
+                "impacto": "Oportunidad",
+                "relevancia": "MEDIA"
+            }
     
-    # 6. NUEVA DEMANDA GLOBAL (oportunidad)
-    if any(word in contenido for word in ['infrastructure', 'construction boom', 'mining expansion']) and \
-       any(word in contenido for word in ['steel', 'metal', 'demand']):
+    # 6. CONSTRUCCIÓN E INFRAESTRUCTURA (demanda)
+    if any(word in contenido for word in ['infrastructure', 'construction', 'building', 'bridge', 'road', 'railway']):
         return {
-            "escenario": "Boom Infraestructura Global",
+            "escenario": "Boom Infraestructura",
             "categoria": "Demanda",
             "impacto": "Oportunidad",
             "relevancia": "MEDIA"
         }
     
-    # Si no cumple ningún criterio, NO ES RELEVANTE
+    # 7. MINERÍA (cliente clave)
+    if any(word in contenido for word in ['mining', 'mine', 'copper', 'gold', 'mineral']):
+        return {
+            "escenario": "Actividad Minera",
+            "categoria": "Demanda",
+            "impacto": "Oportunidad",
+            "relevancia": "MEDIA"
+        }
+    
+    # 8. PETRÓLEO Y GAS (cliente clave)
+    if any(word in contenido for word in ['oil', 'petroleum', 'gas', 'energy', 'pipeline']):
+        return {
+            "escenario": "Sector Petrolero",
+            "categoria": "Demanda",
+            "impacto": "Oportunidad",
+            "relevancia": "MEDIA"
+        }
+    
+    # 9. ECONOMÍA GLOBAL (afecta todo)
+    if any(word in contenido for word in ['recession', 'inflation', 'interest rate', 'economic crisis', 'dollar']):
+        return {
+            "escenario": "Riesgo Económico Global",
+            "categoria": "Economía",
+            "impacto": "Crisis",
+            "relevancia": "MEDIA"
+        }
+    
+    # 10. CUALQUIER OTRA MENCIÓN RELEVANTE
+    if any(word in contenido for word in ['steel', 'iron', 'metal', 'import', 'export', 'trade', 'supply chain']):
+        return {
+            "escenario": "Alerta General Comercio",
+            "categoria": "Comercio",
+            "impacto": "Oportunidad",
+            "relevancia": "BAJA"
+        }
+    
+    # Si no tiene ninguna relación, ignorar
     return None
 
 def obtener_noticias_mundiales():
@@ -273,13 +327,13 @@ def obtener_noticias_mundiales():
         # Sin noticias = Sin alertas
         return []
     
-    # Procesar y FILTRAR solo las relevantes
+    # Procesar y capturar TODAS las noticias relevantes (ALTA, MEDIA, BAJA)
     noticias_relevantes = []
     for noticia in noticias_reales:
         clasificacion = clasificar_noticia_en_escenario(noticia)
         
-        # SOLO agregar si tiene impacto real
-        if clasificacion and clasificacion.get('relevancia') in ['ALTA', 'MEDIA']:
+        # Agregar si tiene alguna clasificación (incluye ALTA, MEDIA, BAJA)
+        if clasificacion:
             noticias_relevantes.append({
                 "titulo": noticia['titulo'][:100],
                 "categoria": clasificacion['categoria'],
