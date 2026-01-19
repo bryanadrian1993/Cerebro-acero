@@ -634,41 +634,25 @@ def fase1_deteccion_oportunidad(escenario):
         "productos_criticos": []
     }
     
-    # 1. Escaneo de Mercado Ecuador
-    obras_activas = []
-    
-    if "Boom" in escenario or "Minero" in escenario:
-        obras_activas.append({
-            "sector": "Minería",
-            "proyecto": "Expansión Mirador Fase 3",
-            "demanda": ["Vigas HEB 300mm", "Tubería Cédula 80", "Plancha Naval"],
-            "volumen_estimado": 500,
-            "urgencia": "ALTA"
-        })
-        obras_activas.append({
-            "sector": "Minería",
-            "proyecto": "Cascabel - Infraestructura",
-            "demanda": ["Vigas IPE 200mm", "Tubería API 5L"],
-            "volumen_estimado": 300,
-            "urgencia": "MEDIA"
-        })
-    
-    if "Crisis" not in escenario:
-        obras_activas.append({
-            "sector": "Petróleo",
-            "proyecto": "Licitación Sucumbíos - Petroamazonas",
-            "demanda": ["Tubería API 5L", "Válvulas 6plg", "Tubo Galvanizado"],
-            "volumen_estimado": 400,
-            "urgencia": "ALTA"
-        })
-    
-    obras_activas.append({
-        "sector": "Infraestructura",
-        "proyecto": "Puentes MTOP - Vía Coastal",
-        "demanda": ["Planchas Navales", "Vigas IPE 200mm", "Perfil Galvanizado"],
-        "volumen_estimado": 600,
-        "urgencia": "MEDIA"
-    })
+    # 1. Escaneo de Mercado Ecuador - DATOS REALES
+    try:
+        obras_activas = obtener_obras_detectadas_ecuador(dias=60)
+        
+        # Filtrar según escenario (opcional)
+        if "Crisis" in escenario:
+            # En crisis, filtrar solo urgencia ALTA
+            obras_activas = [o for o in obras_activas if o['urgencia'] == 'ALTA']
+        
+        if "Boom" in escenario or "Minero" in escenario:
+            # En boom, priorizar minería y petróleo
+            obras_prioritarias = [o for o in obras_activas if o['sector'] in ['Minería', 'Petróleo']]
+            obras_resto = [o for o in obras_activas if o['sector'] not in ['Minería', 'Petróleo']]
+            obras_activas = obras_prioritarias + obras_resto
+        
+    except Exception as e:
+        print(f"⚠️ Error obteniendo obras: {str(e)}")
+        # Fallback a datos básicos
+        obras_activas = []
     
     # 2. Análisis de Inventario Interno (Regla 5)
     try:
