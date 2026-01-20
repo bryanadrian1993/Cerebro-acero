@@ -14,6 +14,7 @@ from newsapi import NewsApiClient
 from compras_publicas_ecuador import obtener_obras_detectadas_ecuador
 from gdelt_news_api import combinar_noticias_newsapi_gdelt
 from sap_integration import mostrar_estado_sap_sidebar, mostrar_panel_sap_completo, obtener_inventario_sap, obtener_ordenes_compra_sap, verificar_conexion_sap
+from tushare_china import mostrar_precios_shanghai_sidebar, obtener_precio_acero_shanghai
 
 # --- TRADUCCIÓN SIMPLE AL ESPAÑOL ---
 # Cache de traducciones para evitar llamadas repetidas a APIs
@@ -1126,6 +1127,9 @@ with st.sidebar:
         
     except Exception as e:
         st.caption(f"⚠️ APIs premium en standby: {str(e)}")
+    
+    # === PRECIOS CHINA (TUSHARE) ===
+    mostrar_precios_shanghai_sidebar()
     
     # === SECCIÓN SAP ===
     mostrar_estado_sap_sidebar()
