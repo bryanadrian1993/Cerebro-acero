@@ -1281,6 +1281,70 @@ with st.container():
     </div>
     """, unsafe_allow_html=True)
     
+    # =============================================
+    # PÁRRAFO NARRATIVO - ANÁLISIS DE LA SITUACIÓN
+    # =============================================
+    def generar_parrafo_narrativo(resumen):
+        """Genera un párrafo explicativo de la situación actual"""
+        
+        # Determinar estado general
+        if resumen["alertas_crisis"] > 0 and resumen["alertas_oportunidad"] > 0:
+            estado = "mixto con alertas y oportunidades"
+        elif resumen["alertas_crisis"] > 0:
+            estado = "de precaución por alertas detectadas"
+        elif resumen["alertas_oportunidad"] > 0:
+            estado = "favorable con oportunidades de mercado"
+        else:
+            estado = "estable sin alertas significativas"
+        
+        # Análisis de fletes
+        if resumen["tendencia_fletes"] == "SUBIENDO":
+            analisis_fletes = f"Los fletes marítimos muestran una tendencia alcista ({resumen['variacion_fletes']:+.1f}%), lo que podría incrementar los costos de importación en las próximas semanas. Se recomienda adelantar compras si hay inventario bajo."
+        elif resumen["tendencia_fletes"] == "BAJANDO":
+            analisis_fletes = f"Los fletes marítimos están bajando ({resumen['variacion_fletes']:+.1f}%), lo que representa una ventana de oportunidad para negociar mejores tarifas con navieras y reducir el costo CFR."
+        else:
+            analisis_fletes = f"Los fletes marítimos se mantienen estables ({resumen['variacion_fletes']:+.1f}%), sin cambios significativos que afecten la planificación de compras."
+        
+        # Análisis de precios
+        analisis_precios = f"El precio del acero HRC en la Bolsa de Shanghai se cotiza a ${resumen['precio_hrc_shanghai']:,.0f}/ton, con un tipo de cambio de {resumen['tipo_cambio']} CNY/USD."
+        
+        # Recomendación de proveedor
+        recomendacion = f"Actualmente, el mejor precio CFR LO Guayaquil lo ofrece {resumen['mejor_proveedor']} a ${resumen['mejor_precio_cfr']:,.0f}/ton para {resumen['mejor_producto']}."
+        
+        # Alertas específicas
+        if resumen["escenarios_crisis"]:
+            alertas_texto = f" Se han detectado {resumen['alertas_crisis']} alerta(s) de crisis que requieren atención: eventos geopolíticos o de mercado que podrían afectar la cadena de suministro."
+        else:
+            alertas_texto = ""
+        
+        # Oportunidades específicas
+        if resumen["escenarios_oportunidad"]:
+            oportunidades_texto = f" Por otro lado, se identifican {resumen['alertas_oportunidad']} oportunidad(es) de mercado que podrían aprovecharse para optimizar compras."
+        else:
+            oportunidades_texto = ""
+        
+        # Construir párrafo completo
+        parrafo = f"""
+        **Estado actual del mercado:** El escenario general es {estado}. {analisis_precios}
+        
+        **Análisis de fletes:** {analisis_fletes}
+        
+        **Recomendación:** {recomendacion}{alertas_texto}{oportunidades_texto}
+        """
+        
+        return parrafo
+    
+    # Mostrar el párrafo narrativo
+    parrafo = generar_parrafo_narrativo(resumen)
+    st.markdown(f"""
+    <div style="background: #1e1e2e; padding: 20px; border-radius: 10px; 
+                border: 1px solid #333; margin-bottom: 20px;">
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.8; margin: 0;">
+            {parrafo.replace(chr(10), '<br>')}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     # Fila 1: Métricas principales
     col1, col2, col3, col4 = st.columns(4)
     
