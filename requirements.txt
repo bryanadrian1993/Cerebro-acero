@@ -6,3 +6,6 @@ pandas
 requests
 yfinance
 beautifulsoup4
+google-genai
+deep-translator
+feedparser
