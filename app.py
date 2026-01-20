@@ -40,7 +40,7 @@ def traducir_a_espanol_simple(texto, idioma_origen='en'):
             from google import genai
             prompt = f"Translate this text to Spanish (only output the translation, no explanations): {texto}"
             response = gemini_client.models.generate_content(
-                model='gemini-1.5-flash',
+                model='gemini-2.0-flash',
                 contents=prompt
             )
             resultado = response.text.strip()
@@ -74,10 +74,22 @@ def traducir_a_espanol_simple(texto, idioma_origen='en'):
             _cache_traducciones[texto] = resultado
             return resultado
         except:
-            # Si OpenAI falla (sin crédito), continuar con patrones
+            # Si OpenAI falla (sin crédito), continuar con googletrans
             pass
     
-    # 🥉 ESTRATEGIA 3: Patrones de frases (fallback final - sin APIs)
+    # 🥉 ESTRATEGIA 3: Deep Translator (gratis sin límites)
+    if not resultado:
+        try:
+            from deep_translator import GoogleTranslator
+            resultado = GoogleTranslator(source='en', target='es').translate(texto)
+            _cache_traducciones[texto] = resultado
+            print(f"[DEEP_TRANSLATOR] Traducido: {texto[:50]}... -> {resultado[:50]}...")
+            return resultado
+        except Exception as e:
+            print(f"[ERROR DEEP_TRANSLATOR] {str(e)}")
+            pass
+    
+    # 🏅 ESTRATEGIA 4: Patrones de frases (fallback final - sin APIs)
     import re
     
     # Traducir frases completas comunes
@@ -1148,18 +1160,18 @@ with st.sidebar:
     # Descripción del escenario
     with st.expander("ℹ️ Detalles del Escenario"):
         if "titulo_noticia" in info:
-            # Traducir título si está en inglés
+            # Traducir título (por defecto en inglés desde NewsAPI/GDELT)
             titulo_noticia = info['titulo_noticia']
-            idioma_titulo = info.get('idioma', 'es')
+            idioma_titulo = info.get('idioma', 'en')
             if idioma_titulo == 'en':
                 titulo_noticia = traducir_a_espanol_simple(titulo_noticia, 'en')
             
             st.markdown(f"**📰 Noticia:** {titulo_noticia}")
             st.markdown(f"**Categoría:** {info['categoria']}")
         
-        # Traducir descripción si está en inglés
+        # Traducir descripción (por defecto en inglés desde NewsAPI/GDELT)
         descripcion = info['descripcion']
-        idioma_desc = info.get('idioma', 'es')
+        idioma_desc = info.get('idioma', 'en')
         if idioma_desc == 'en':
             descripcion = traducir_a_espanol_simple(descripcion, 'en')
         
@@ -1172,10 +1184,10 @@ with st.sidebar:
             for n in info["noticias"]:
                 link_url = n.get('url', '#')
                 fuente = n.get('fuente', 'Desconocido')
-                idioma = n.get('idioma', 'es')
+                idioma = n.get('idioma', 'en')
                 titulo_original = n.get('titulo', 'Sin título')
                 
-                # Traducir al español si está en inglés
+                # Traducir al español (por defecto noticias vienen en inglés)
                 titulo_display = traducir_a_espanol_simple(titulo_original, idioma) if idioma == 'en' else titulo_original
                 
                 # Usar HTML simple con target="_blank"
