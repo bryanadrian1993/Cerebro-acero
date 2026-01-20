@@ -17,7 +17,7 @@ from sap_integration import mostrar_estado_sap_sidebar, mostrar_panel_sap_comple
 # Precios de acero de Shanghai (SHFE) - AKShare (gratuito, sin registro)
 from akshare_china import mostrar_precios_shanghai_sidebar, obtener_precio_acero_shanghai
 # Calculadora CFR LO Guayaquil
-from calculadora_cfr import mostrar_cfr_sidebar, mostrar_calculadora_cfr, mostrar_comparador_proveedores
+from calculadora_cfr import mostrar_cfr_sidebar, mostrar_calculadora_cfr, mostrar_comparador_proveedores, mostrar_productos_proveedores_principal
 # Monitor de Fletes Marítimos (Proxy con acciones de navieras)
 from monitor_fletes import mostrar_fletes_sidebar, mostrar_panel_fletes, obtener_flete_estimado_para_cfr
 
@@ -1228,7 +1228,15 @@ st.markdown("# 🧠 Cerebro de Acero - Dashboard Ejecutivo")
 
 st.markdown("---")
 
-# SECCIÓN NUEVA: Datos Premium en Tiempo Real
+# SECCIÓN 1: PRODUCTOS DE PROVEEDORES CON CFR LO GUAYAQUIL
+try:
+    mostrar_productos_proveedores_principal()
+except Exception as e:
+    st.warning(f"Error cargando productos: {e}")
+
+st.markdown("---")
+
+# SECCIÓN 2: Datos de Mercado en Tiempo Real (Movido abajo)
 try:
     dashboard_premium = generar_dashboard_completo_gratis()
     

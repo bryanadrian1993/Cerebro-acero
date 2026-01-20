@@ -440,3 +440,94 @@ def mostrar_comparador_proveedores():
             - 📦 Productos: {', '.join(datos['productos'])}
             ---
             """)
+
+
+# ========================================
+# PANEL PRODUCTOS CFR LO PARA DASHBOARD PRINCIPAL
+# ========================================
+
+def obtener_productos_cfr_lo_principal():
+    """
+    Devuelve los productos principales de los proveedores con precios CFR LO
+    Para mostrar en el dashboard principal
+    """
+    precios = obtener_precio_acero_shanghai()
+    tipo_cambio = obtener_tipo_cambio_usd_cny()
+    
+    # Precios base de Shanghai en USD
+    hrc_usd = convertir_cny_a_usd(precios.get("hrc", {}).get("precio", 4200), tipo_cambio)
+    rebar_usd = convertir_cny_a_usd(precios.get("rebar", {}).get("precio", 3800), tipo_cambio)
+    inox_usd = convertir_cny_a_usd(precios.get("inox", {}).get("precio", 16500), tipo_cambio)
+    
+    productos = []
+    
+    # Productos principales por proveedor
+    productos_por_proveedor = {
+        "BENXI": {"producto": "HRC (Laminado Caliente)", "fob": hrc_usd, "ruta": "Tianjin → Guayaquil", "icono": "🔥"},
+        "ANGANG": {"producto": "Planchas Navales", "fob": hrc_usd + 50, "ruta": "Tianjin → Guayaquil", "icono": "🚢"},
+        "TIANTIE": {"producto": "Aluzinc", "fob": hrc_usd + 80, "ruta": "Tianjin → Guayaquil", "icono": "✨"},
+        "FWD": {"producto": "Galvanizado", "fob": hrc_usd + 60, "ruta": "Qingdao → Guayaquil", "icono": "🛡️"},
+        "SHUIXIN": {"producto": "Planchas A572", "fob": hrc_usd + 30, "ruta": "Tianjin → Guayaquil", "icono": "🏗️"},
+        "HBIS": {"producto": "Galv. Flejes", "fob": hrc_usd + 40, "ruta": "Tianjin → Guayaquil", "icono": "📦"},
+    }
+    
+    for proveedor, datos in productos_por_proveedor.items():
+        cfr = calcular_cfr_lo_guayaquil(datos["fob"], 1, datos["ruta"])
+        productos.append({
+            "proveedor": proveedor,
+            "producto": datos["producto"],
+            "fob_usd": round(datos["fob"], 0),
+            "flete": cfr["flete_ton"],
+            "lo": cfr["lo_descarga_ton"],
+            "cfr_lo": cfr["cfr_lo_ton"],
+            "dias": cfr["dias_transito"],
+            "icono": datos["icono"],
+            "ruta": datos["ruta"]
+        })
+    
+    return productos, tipo_cambio
+
+
+def mostrar_productos_proveedores_principal():
+    """
+    Muestra los productos de proveedores con CFR LO en el dashboard principal
+    Diseñado para ocupar la posición de 'Datos de Mercado en Tiempo Real'
+    """
+    import streamlit as st
+    
+    st.markdown("### 🏭 Productos CFR LO Guayaquil - Tus Proveedores")
+    
+    productos, tipo_cambio = obtener_productos_cfr_lo_principal()
+    
+    # Mostrar 6 productos en 2 filas de 3
+    col1, col2, col3 = st.columns(3)
+    cols = [col1, col2, col3]
+    
+    # Primera fila: Proveedores principales
+    principales = [p for p in productos if p["proveedor"] in ["BENXI", "ANGANG", "TIANTIE"]]
+    for i, prod in enumerate(principales):
+        with cols[i]:
+            st.metric(
+                f"{prod['icono']} {prod['proveedor']}",
+                f"${prod['cfr_lo']:,.0f}/ton",
+                delta=f"FOB ${prod['fob_usd']:,.0f} + flete",
+                delta_color="off"
+            )
+            st.caption(f"{prod['producto']} • {prod['dias']} días")
+    
+    # Segunda fila: Proveedores secundarios
+    col4, col5, col6 = st.columns(3)
+    cols2 = [col4, col5, col6]
+    
+    secundarios = [p for p in productos if p["proveedor"] in ["FWD", "SHUIXIN", "HBIS"]]
+    for i, prod in enumerate(secundarios):
+        with cols2[i]:
+            st.metric(
+                f"{prod['icono']} {prod['proveedor']}",
+                f"${prod['cfr_lo']:,.0f}/ton",
+                delta=f"FOB ${prod['fob_usd']:,.0f} + flete",
+                delta_color="off"
+            )
+            st.caption(f"{prod['producto']} • {prod['dias']} días")
+    
+    st.caption(f"💱 Tipo de cambio: {tipo_cambio} CNY/USD | Precios FOB referencia Shanghai SHFE")
