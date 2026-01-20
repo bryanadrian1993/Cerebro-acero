@@ -1236,60 +1236,6 @@ except Exception as e:
 
 st.markdown("---")
 
-# SECCIÓN 2: Datos de Mercado en Tiempo Real (Movido abajo)
-try:
-    dashboard_premium = generar_dashboard_completo_gratis()
-    
-    st.markdown("### 💰 Datos de Mercado en Tiempo Real")
-    
-    col_a, col_b, col_c, col_d = st.columns(4)
-    
-    with col_a:
-        acero_premium = dashboard_premium['acero']
-        st.metric(
-            "Precio Acero HRC",
-            f"${acero_premium['precio']:.2f}/ton",
-            delta=f"{acero_premium['cambio_pct']:.1f}%",
-            delta_color="inverse"
-        )
-        st.caption(acero_premium['tendencia'])
-    
-    with col_b:
-        fletes_premium = dashboard_premium['fletes']
-        st.metric(
-            "Flete Container 40'",
-            f"${fletes_premium['costo_estimado_40ft']:.0f}",
-            delta=f"{fletes_premium['cambio_pct']:.1f}%"
-        )
-        st.caption(fletes_premium['recomendacion'])
-    
-    with col_c:
-        forex_premium = dashboard_premium['forex']
-        if 'Yuan Chino' in forex_premium:
-            yuan_data = forex_premium['Yuan Chino']
-            st.metric(
-                "CNY/USD",
-                f"¥{yuan_data['tasa']:.4f}",
-                delta=f"{yuan_data['cambio_mes']:.2f}%"
-            )
-            st.caption(yuan_data['alerta'])
-    
-    with col_d:
-        # Mostrar commodities relacionados
-        commodities = dashboard_premium['commodities']
-        if 'Cobre' in commodities:
-            cobre_data = commodities['Cobre']
-            st.metric(
-                "Cobre (Indicador)",
-                f"${cobre_data['precio']:.2f}",
-                delta=f"{cobre_data['cambio_pct']:.1f}%"
-            )
-            st.caption("Proxy de mercado")
-    
-    st.markdown("---")
-except:
-    pass
-
 # === CALCULADORA CFR LO GUAYAQUIL ===
 with st.expander("🚢 **Calculadora CFR LO Guayaquil** - Costo real puesto en puerto", expanded=False):
     mostrar_calculadora_cfr()
