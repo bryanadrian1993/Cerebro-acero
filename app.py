@@ -18,6 +18,8 @@ from sap_integration import mostrar_estado_sap_sidebar, mostrar_panel_sap_comple
 from akshare_china import mostrar_precios_shanghai_sidebar, obtener_precio_acero_shanghai
 # Calculadora CFR LO Guayaquil
 from calculadora_cfr import mostrar_cfr_sidebar, mostrar_calculadora_cfr, mostrar_comparador_proveedores
+# Monitor de Fletes Marítimos (Proxy con acciones de navieras)
+from monitor_fletes import mostrar_fletes_sidebar, mostrar_panel_fletes, obtener_flete_estimado_para_cfr
 
 # --- TRADUCCIÓN SIMPLE AL ESPAÑOL ---
 # Cache de traducciones para evitar llamadas repetidas a APIs
@@ -1137,6 +1139,9 @@ with st.sidebar:
     # === CFR LO GUAYAQUIL ===
     mostrar_cfr_sidebar()
     
+    # === MONITOR DE FLETES ===
+    mostrar_fletes_sidebar()
+    
     # === SECCIÓN SAP ===
     mostrar_estado_sap_sidebar()
     
@@ -1282,6 +1287,10 @@ with st.expander("🚢 **Calculadora CFR LO Guayaquil** - Costo real puesto en p
     mostrar_calculadora_cfr()
     st.markdown("---")
     mostrar_comparador_proveedores()
+
+# === MONITOR DE FLETES MARÍTIMOS ===
+with st.expander("📊 **Monitor de Fletes** - Tendencia China→Guayaquil", expanded=False):
+    mostrar_panel_fletes()
 
 # Métricas principales con tarjetas mejoradas
 col1, col2, col3 = st.columns(3)
