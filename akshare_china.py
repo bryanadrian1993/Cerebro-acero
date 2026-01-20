@@ -241,18 +241,19 @@ def mostrar_precios_shanghai_sidebar():
         
         st.metric(
             "🔥 HRC (Bobina)",
-            f"¥{hrc['precio']:,.0f}",
+            f"${precio_usd:,.0f} USD/ton",
             delta=f"{hrc['cambio_pct']:+.1f}%",
             delta_color="inverse"
         )
-        st.caption(f"≈ ${precio_usd:,.0f} USD/ton")
+        st.caption(f"¥{hrc['precio']:,.0f} CNY")
     
     # Rebar
     if datos["rebar"]:
         rb = datos["rebar"]
+        precio_usd_rb = convertir_cny_a_usd(rb["precio"])
         st.metric(
             "🔩 Rebar (Varilla)",
-            f"¥{rb['precio']:,.0f}",
+            f"${precio_usd_rb:,.0f} USD/ton",
             delta=f"{rb['cambio_pct']:+.1f}%",
             delta_color="inverse"
         )
@@ -295,11 +296,11 @@ def mostrar_panel_china_completo():
             precio_usd = convertir_cny_a_usd(hrc["precio"])
             st.metric(
                 "🔥 Hot Rolled Coil",
-                f"¥{hrc['precio']:,.0f}/ton",
+                f"${precio_usd:,.0f} USD/ton",
                 delta=f"{hrc['cambio_pct']:+.2f}%",
                 delta_color="inverse"
             )
-            st.caption(f"≈ ${precio_usd:,.0f} USD/ton")
+            st.caption(f"¥{hrc['precio']:,.0f} CNY")
     
     with col2:
         if datos["rebar"]:
@@ -307,11 +308,11 @@ def mostrar_panel_china_completo():
             precio_usd = convertir_cny_a_usd(rb["precio"])
             st.metric(
                 "🔩 Rebar",
-                f"¥{rb['precio']:,.0f}/ton",
+                f"${precio_usd:,.0f} USD/ton",
                 delta=f"{rb['cambio_pct']:+.2f}%",
                 delta_color="inverse"
             )
-            st.caption(f"≈ ${precio_usd:,.0f} USD/ton")
+            st.caption(f"¥{rb['precio']:,.0f} CNY")
     
     with col3:
         if datos["inox"]:
@@ -319,11 +320,11 @@ def mostrar_panel_china_completo():
             precio_usd = convertir_cny_a_usd(ss["precio"])
             st.metric(
                 "✨ Acero Inoxidable",
-                f"¥{ss['precio']:,.0f}/ton",
+                f"${precio_usd:,.0f} USD/ton",
                 delta=f"{ss['cambio_pct']:+.2f}%",
                 delta_color="inverse"
             )
-            st.caption(f"≈ ${precio_usd:,.0f} USD/ton")
+            st.caption(f"¥{ss['precio']:,.0f} CNY")
     
     with col4:
         st.metric(
