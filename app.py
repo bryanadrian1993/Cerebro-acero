@@ -1217,6 +1217,175 @@ st.markdown("# 🧠 Cerebro de Acero - Dashboard Ejecutivo")
 
 st.markdown("---")
 
+# =============================================
+# RESUMEN EJECUTIVO DEL DÍA
+# =============================================
+def generar_resumen_ejecutivo():
+    """Genera un resumen ejecutivo con toda la información clave"""
+    
+    # Obtener datos de proveedores y precios
+    try:
+        from calculadora_cfr import obtener_productos_cfr_lo_principal, obtener_tipo_cambio_usd_cny
+        from akshare_china import obtener_precio_acero_shanghai, convertir_cny_a_usd
+        from monitor_fletes import analizar_tendencia_fletes
+        
+        productos_cfr, tipo_cambio = obtener_productos_cfr_lo_principal()
+        precios_shanghai = obtener_precio_acero_shanghai()
+        tendencia_fletes = analizar_tendencia_fletes()
+    except Exception as e:
+        productos_cfr = []
+        tipo_cambio = 7.25
+        precios_shanghai = {}
+        tendencia_fletes = {"tendencia": "ESTABLE", "variacion_pct": 0}
+    
+    # Contar alertas activas
+    alertas_crisis = [e for e in escenarios_disponibles if "Crisis" in info_escenarios.get(e, {}).get("tipo", "")]
+    alertas_oportunidad = [e for e in escenarios_disponibles if "Oportunidad" in info_escenarios.get(e, {}).get("tipo", "")]
+    
+    # Precio más bajo CFR
+    mejor_precio = min(productos_cfr, key=lambda x: x["cfr_lo"]) if productos_cfr else {"proveedor": "N/A", "cfr_lo": 0, "producto": "N/A"}
+    
+    # Obtener precio HRC en USD
+    try:
+        hrc_usd = convertir_cny_a_usd(precios_shanghai.get("hrc", {}).get("precio", 4200), tipo_cambio)
+    except:
+        hrc_usd = 480
+    
+    return {
+        "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "alertas_crisis": len(alertas_crisis),
+        "alertas_oportunidad": len(alertas_oportunidad),
+        "precio_hrc_shanghai": round(hrc_usd, 0),
+        "tipo_cambio": tipo_cambio,
+        "tendencia_fletes": tendencia_fletes.get("tendencia", "ESTABLE"),
+        "variacion_fletes": tendencia_fletes.get("variacion_pct", 0),
+        "mejor_proveedor": mejor_precio["proveedor"],
+        "mejor_precio_cfr": mejor_precio["cfr_lo"],
+        "mejor_producto": mejor_precio["producto"],
+        "productos_cfr": productos_cfr,
+        "escenarios_crisis": alertas_crisis[:3],
+        "escenarios_oportunidad": alertas_oportunidad[:3]
+    }
+
+# Mostrar Resumen Ejecutivo
+with st.container():
+    resumen = generar_resumen_ejecutivo()
+    
+    # Título del resumen con fecha
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+                padding: 20px; border-radius: 10px; border-left: 5px solid #00ff88;
+                margin-bottom: 20px;">
+        <h2 style="color: #00ff88; margin: 0;">📋 Resumen Ejecutivo</h2>
+        <p style="color: #888; margin: 5px 0 0 0;">Actualizado: {resumen['fecha']}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Fila 1: Métricas principales
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        # Alertas
+        if resumen["alertas_crisis"] > 0:
+            st.error(f"🔴 {resumen['alertas_crisis']} Alerta(s) Crisis")
+        else:
+            st.success("✅ Sin alertas de crisis")
+    
+    with col2:
+        # Oportunidades
+        if resumen["alertas_oportunidad"] > 0:
+            st.success(f"🟢 {resumen['alertas_oportunidad']} Oportunidad(es)")
+        else:
+            st.info("ℹ️ Sin oportunidades detectadas")
+    
+    with col3:
+        # Precio Shanghai
+        st.metric(
+            "📈 HRC Shanghai",
+            f"${resumen['precio_hrc_shanghai']:,.0f}/ton",
+            delta=f"CNY/USD: {resumen['tipo_cambio']}",
+            delta_color="off"
+        )
+    
+    with col4:
+        # Tendencia Fletes
+        delta_color = "inverse" if resumen["tendencia_fletes"] == "SUBIENDO" else "normal"
+        st.metric(
+            "🚢 Fletes Marítimos",
+            resumen["tendencia_fletes"],
+            delta=f"{resumen['variacion_fletes']:+.1f}%",
+            delta_color=delta_color
+        )
+    
+    # Fila 2: Recomendaciones
+    st.markdown("---")
+    col_izq, col_der = st.columns(2)
+    
+    with col_izq:
+        st.markdown("### 💡 Recomendación de Compra")
+        st.markdown(f"""
+        <div style="background: #0a2f1f; padding: 15px; border-radius: 8px; border: 1px solid #00ff88;">
+            <p style="color: #00ff88; font-size: 18px; margin: 0;">
+                <strong>Mejor opción:</strong> {resumen['mejor_proveedor']}
+            </p>
+            <p style="color: white; font-size: 24px; margin: 10px 0;">
+                <strong>${resumen['mejor_precio_cfr']:,.0f}/ton</strong> CFR LO Guayaquil
+            </p>
+            <p style="color: #888; margin: 0;">
+                Producto: {resumen['mejor_producto']}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Acción recomendada según fletes
+        if resumen["tendencia_fletes"] == "SUBIENDO":
+            st.warning("⚠️ **Acción:** Fletes subiendo - Considerar compra anticipada")
+        elif resumen["tendencia_fletes"] == "BAJANDO":
+            st.success("✅ **Acción:** Fletes bajando - Buen momento para negociar")
+        else:
+            st.info("ℹ️ **Acción:** Mercado estable - Monitorear")
+    
+    with col_der:
+        st.markdown("### 📰 Situación del Mercado")
+        
+        # Mostrar alertas de crisis
+        if resumen["escenarios_crisis"]:
+            for crisis in resumen["escenarios_crisis"]:
+                st.error(f"🔴 {crisis[:50]}...")
+        
+        # Mostrar oportunidades
+        if resumen["escenarios_oportunidad"]:
+            for oport in resumen["escenarios_oportunidad"]:
+                st.success(f"🟢 {oport[:50]}...")
+        
+        if not resumen["escenarios_crisis"] and not resumen["escenarios_oportunidad"]:
+            st.info("✅ Mercado operando con normalidad")
+    
+    # Comparativa rápida de proveedores
+    st.markdown("---")
+    st.markdown("### 🏭 Comparativa Rápida de Proveedores CFR LO Guayaquil")
+    
+    if resumen["productos_cfr"]:
+        cols = st.columns(6)
+        for i, prod in enumerate(resumen["productos_cfr"][:6]):
+            with cols[i]:
+                # Marcar el mejor precio
+                es_mejor = prod["proveedor"] == resumen["mejor_proveedor"]
+                color = "#00ff88" if es_mejor else "white"
+                badge = "⭐ MEJOR" if es_mejor else ""
+                
+                st.markdown(f"""
+                <div style="text-align: center; padding: 10px; background: {'#0a2f1f' if es_mejor else '#1a1a2e'}; 
+                            border-radius: 8px; border: 1px solid {color};">
+                    <p style="color: {color}; font-size: 12px; margin: 0;">{badge}</p>
+                    <p style="color: white; font-weight: bold; margin: 5px 0;">{prod['proveedor']}</p>
+                    <p style="color: {color}; font-size: 20px; margin: 0;"><strong>${prod['cfr_lo']:,.0f}</strong></p>
+                    <p style="color: #888; font-size: 11px; margin: 5px 0 0 0;">{prod['dias']} días</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+st.markdown("---")
+
 # SECCIÓN 1: PRODUCTOS DE PROVEEDORES CON CFR LO GUAYAQUIL
 try:
     mostrar_productos_proveedores_principal()
