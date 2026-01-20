@@ -71,15 +71,44 @@ RUTAS_FLETE = {
     }
 }
 
-# Proveedores de acero en China
+# Proveedores REALES de Import Aceros S.A.
 PROVEEDORES_CHINA = {
-    "Benxi Steel (Liaoning)": {"puerto": "Tianjin → Guayaquil", "productos": ["HRC", "CRC", "Placa"]},
-    "Baosteel (Shanghai)": {"puerto": "Shanghai → Guayaquil", "productos": ["HRC", "CRC", "Galvanizado"]},
-    "TISCO (Shanxi)": {"puerto": "Tianjin → Guayaquil", "productos": ["Inoxidable"]},
-    "Ansteel (Liaoning)": {"puerto": "Tianjin → Guayaquil", "productos": ["HRC", "Rebar"]},
-    "Shagang (Jiangsu)": {"puerto": "Shanghai → Guayaquil", "productos": ["Rebar", "Alambrón"]},
-    "Shougang (Beijing)": {"puerto": "Tianjin → Guayaquil", "productos": ["HRC", "Placa"]},
-    "Manuchar (Trading)": {"puerto": "Shanghai → Guayaquil", "productos": ["Todos"]},
+    "BENXI (Benxi Steel Group)": {
+        "puerto": "Tianjin → Guayaquil",
+        "productos": ["HRC (Laminado Caliente)", "CRC (Laminado Frío)", "Galvanizado"],
+        "ubicacion": "Liaoning",
+        "principal": True
+    },
+    "ANGANG (Ansteel Group)": {
+        "puerto": "Tianjin → Guayaquil",
+        "productos": ["Planchas Navales", "Planchas Estructurales", "CRC (Laminado Frío)"],
+        "ubicacion": "Liaoning",
+        "principal": True
+    },
+    "TIANTIE (Tianjin Tiantie)": {
+        "puerto": "Tianjin → Guayaquil",
+        "productos": ["Aluzinc", "CRC (Laminado Frío)"],
+        "ubicacion": "Tianjin",
+        "principal": True
+    },
+    "FWD (Shandong FWD Steel)": {
+        "puerto": "Qingdao → Guayaquil",
+        "productos": ["Galvanizado (espesores delgados)"],
+        "ubicacion": "Shandong",
+        "principal": False
+    },
+    "SHUIXIN (Tangshan Shuixin)": {
+        "puerto": "Tianjin → Guayaquil",
+        "productos": ["Planchas Estructurales ASTM A572"],
+        "ubicacion": "Tangshan",
+        "principal": False
+    },
+    "HBIS (Hebei Iron and Steel)": {
+        "puerto": "Tianjin → Guayaquil",
+        "productos": ["Galvanizado (Flejes)"],
+        "ubicacion": "Hebei",
+        "principal": False
+    },
 }
 
 
@@ -363,9 +392,10 @@ def mostrar_calculadora_cfr():
 # ========================================
 
 def mostrar_comparador_proveedores():
-    """Compara CFR LO entre diferentes proveedores"""
+    """Compara CFR LO entre diferentes proveedores REALES de Import Aceros"""
     
-    st.subheader("🏭 Comparador de Proveedores China")
+    st.subheader("🏭 Tus Proveedores Reales - Import Aceros S.A.")
+    st.caption("*Proveedores con los que trabajas actualmente*")
     
     precios = obtener_precio_acero_shanghai()
     tipo_cambio = obtener_tipo_cambio_usd_cny()
@@ -379,19 +409,34 @@ def mostrar_comparador_proveedores():
         ruta = datos["puerto"]
         cfr = calcular_cfr_lo_guayaquil(hrc_usd, 100, ruta)
         
+        # Marcar proveedores principales
+        es_principal = "⭐" if datos.get("principal", False) else ""
+        
         comparativa.append({
+            "": es_principal,
             "Proveedor": proveedor,
-            "Puerto Origen": RUTAS_FLETE[ruta]["puerto_origen"],
+            "Ubicación": datos.get("ubicacion", "China"),
+            "Puerto": RUTAS_FLETE[ruta]["puerto_origen"],
             "FOB USD/ton": f"${hrc_usd:,.0f}",
-            "Flete USD/ton": f"${cfr['flete_ton']:,.0f}",
-            "CFR LO USD/ton": f"${cfr['cfr_lo_ton']:,.0f}",
-            "Días Tránsito": cfr["dias_transito"],
-            "Productos": ", ".join(datos["productos"])
+            "Flete": f"${cfr['flete_ton']:,.0f}",
+            "CFR LO GYE": f"${cfr['cfr_lo_ton']:,.0f}",
+            "Días": cfr["dias_transito"],
+            "Productos": ", ".join(datos["productos"][:2]) + ("..." if len(datos["productos"]) > 2 else "")
         })
     
     df = pd.DataFrame(comparativa)
     st.dataframe(df, hide_index=True, use_container_width=True)
     
-    # Recomendación
-    mejor = min(comparativa, key=lambda x: float(x["CFR LO USD/ton"].replace("$", "").replace(",", "")))
-    st.success(f"✅ **Mejor opción**: {mejor['Proveedor']} - {mejor['CFR LO USD/ton']}/ton ({mejor['Días Tránsito']} días)")
+    st.caption("⭐ = Proveedor principal")
+    
+    # Info de proveedores
+    with st.expander("📋 Detalle de Proveedores"):
+        for proveedor, datos in PROVEEDORES_CHINA.items():
+            principal = "⭐ **PRINCIPAL**" if datos.get("principal") else ""
+            st.markdown(f"""
+            **{proveedor}** {principal}
+            - 📍 Ubicación: {datos.get('ubicacion', 'China')}
+            - 🚢 Puerto: {datos['puerto'].split(' → ')[0]}
+            - 📦 Productos: {', '.join(datos['productos'])}
+            ---
+            """)
