@@ -14,7 +14,8 @@ from newsapi import NewsApiClient
 from compras_publicas_ecuador import obtener_obras_detectadas_ecuador
 from gdelt_news_api import combinar_noticias_newsapi_gdelt
 from sap_integration import mostrar_estado_sap_sidebar, mostrar_panel_sap_completo, obtener_inventario_sap, obtener_ordenes_compra_sap, verificar_conexion_sap
-from tushare_china import mostrar_precios_shanghai_sidebar, obtener_precio_acero_shanghai
+# Precios de acero de Shanghai (SHFE) - AKShare (gratuito, sin registro)
+from akshare_china import mostrar_precios_shanghai_sidebar, obtener_precio_acero_shanghai
 
 # --- TRADUCCIÓN SIMPLE AL ESPAÑOL ---
 # Cache de traducciones para evitar llamadas repetidas a APIs
