@@ -16,6 +16,8 @@ from gdelt_news_api import combinar_noticias_newsapi_gdelt
 from sap_integration import mostrar_estado_sap_sidebar, mostrar_panel_sap_completo, obtener_inventario_sap, obtener_ordenes_compra_sap, verificar_conexion_sap
 # Precios de acero de Shanghai (SHFE) - AKShare (gratuito, sin registro)
 from akshare_china import mostrar_precios_shanghai_sidebar, obtener_precio_acero_shanghai
+# Calculadora CFR LO Guayaquil
+from calculadora_cfr import mostrar_cfr_sidebar, mostrar_calculadora_cfr, mostrar_comparador_proveedores
 
 # --- TRADUCCIÓN SIMPLE AL ESPAÑOL ---
 # Cache de traducciones para evitar llamadas repetidas a APIs
@@ -1132,6 +1134,9 @@ with st.sidebar:
     # === PRECIOS CHINA (TUSHARE) ===
     mostrar_precios_shanghai_sidebar()
     
+    # === CFR LO GUAYAQUIL ===
+    mostrar_cfr_sidebar()
+    
     # === SECCIÓN SAP ===
     mostrar_estado_sap_sidebar()
     
@@ -1271,6 +1276,12 @@ try:
     st.markdown("---")
 except:
     pass
+
+# === CALCULADORA CFR LO GUAYAQUIL ===
+with st.expander("🚢 **Calculadora CFR LO Guayaquil** - Costo real puesto en puerto", expanded=False):
+    mostrar_calculadora_cfr()
+    st.markdown("---")
+    mostrar_comparador_proveedores()
 
 # Métricas principales con tarjetas mejoradas
 col1, col2, col3 = st.columns(3)
