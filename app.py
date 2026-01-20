@@ -1093,45 +1093,34 @@ with st.sidebar:
     except Exception as e:
         st.caption(f"⚠️ APIs básicas en standby")
     
-    # DASHBOARD PREMIUM GRATUITO (Yahoo Finance, BDRY, etc.)
+    # PANEL DE ESTADO DEL NEGOCIO
     st.markdown("---")
-    st.markdown("### 💰 **Datos Premium**")
+    st.markdown("### 📊 **Estado del Negocio**")
     
-    try:
-        dashboard_premium = generar_dashboard_completo_gratis()
-        
-        # Precio Acero Real (Yahoo Finance)
-        acero_premium = dashboard_premium['acero']
-        st.metric(
-            "🔥 Precio Acero HRC (Real)",
-            f"${acero_premium['precio']:.2f}/ton",
-            delta=f"{acero_premium['cambio_pct']:.1f}%",
-            delta_color="inverse"
-        )
-        st.caption(f"Fuente: {acero_premium['fuente']}")
-        
-        # Costo de Fletes (BDRY ETF)
-        fletes_premium = dashboard_premium['fletes']
-        st.metric(
-            "🚢 Container 40' (Estimado)",
-            f"${fletes_premium['costo_estimado_40ft']:.0f}",
-            delta=fletes_premium['tendencia']
-        )
-        st.caption(f"Recomendación: {fletes_premium['recomendacion']}")
-        
-        # Tasa CNY detallada
-        forex_premium = dashboard_premium['forex']
-        if 'Yuan Chino' in forex_premium:
-            yuan_data = forex_premium['Yuan Chino']
-            st.metric(
-                "💵 CNY/USD (Detallado)",
-                f"¥{yuan_data['tasa']:.4f}",
-                delta=f"{yuan_data['cambio_mes']:.2f}% (mes)"
-            )
-            st.caption(yuan_data['alerta'])
-        
-    except Exception as e:
-        st.caption(f"⚠️ APIs premium en standby: {str(e)}")
+    # Órdenes en tránsito (simulado - será real con SAP)
+    st.metric(
+        "🚢 Órdenes en Tránsito",
+        "3 contenedores",
+        delta="ETA: 18 días",
+        delta_color="off"
+    )
+    
+    # Stock crítico
+    st.metric(
+        "📦 Productos Stock Bajo",
+        "2 alertas",
+        delta="HRC, Galvanizado",
+        delta_color="inverse"
+    )
+    
+    # Último precio pagado
+    st.metric(
+        "💵 Último CFR Pagado",
+        "$580/ton",
+        delta="BENXI - HRC",
+        delta_color="off"
+    )
+    st.caption("*Datos de ejemplo - Se actualizarán con SAP*")
     
     # === PRECIOS CHINA (TUSHARE) ===
     mostrar_precios_shanghai_sidebar()
