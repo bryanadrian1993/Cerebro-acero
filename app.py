@@ -20,6 +20,16 @@ from akshare_china import mostrar_precios_shanghai_sidebar, obtener_precio_acero
 from calculadora_cfr import mostrar_cfr_sidebar, mostrar_calculadora_cfr, mostrar_comparador_proveedores, mostrar_productos_proveedores_principal
 # Monitor de Fletes Marítimos (Proxy con acciones de navieras)
 from monitor_fletes import mostrar_fletes_sidebar, mostrar_panel_fletes, obtener_flete_estimado_para_cfr
+# Sistema de BI e Inteligencia Artificial
+from db_manager import db, DatabaseManager
+from ai_models import SistemaIA
+from bi_dashboard import BIDashboard
+from alertas_inteligentes import SistemaAlertas
+from optimizer import OptimizadorProveedores, CalculadoraPuntoReorden, SimuladorEscenarios
+# Sistema Palantir - Ontología, Timeline y Geoespacial
+from palantir_ontology import ontology, SupplyChainOntology
+from palantir_timeline import timeline, PalantirTimeline
+from palantir_geospatial import create_geospatial_analysis
 
 # --- TRADUCCIÓN SIMPLE AL ESPAÑOL ---
 # Cache de traducciones para evitar llamadas repetidas a APIs
@@ -546,95 +556,310 @@ def generar_escenarios_desde_noticias():
     
     return escenarios, info_escenarios
 
-# --- CSS PERSONALIZADO TEMA OSCURO ---
+# --- CSS PERSONALIZADO ESTILO PALANTIR ---
 st.markdown("""
 <style>
-    /* Fondo oscuro global */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    
+    /* === PALANTIR THEME: Dark Intelligence Platform === */
+    
+    /* Fondo principal - Negro profundo */
     .stApp {
-        background-color: #0a0e27;
-        color: #ffffff;
+        background-color: #0D0D0D;
+        color: #E8E8E8;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
-    /* Sidebar oscuro */
+    /* Sidebar - Panel lateral oscuro con borde azul */
     [data-testid="stSidebar"] {
-        background-color: #14182b;
+        background: linear-gradient(180deg, #0A0A0A 0%, #111111 100%);
+        border-right: 1px solid #1A4D8F;
     }
     
-    /* Tarjetas de métricas mejoradas */
+    /* Títulos - Estilo Palantir con línea azul */
+    h1 {
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+        font-size: 2.2rem !important;
+        letter-spacing: -0.02em !important;
+        border-bottom: 2px solid #1A4D8F;
+        padding-bottom: 12px;
+        margin-bottom: 20px !important;
+        text-transform: uppercase;
+        font-family: 'Inter', sans-serif !important;
+    }
+    
+    h2 {
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+        font-size: 1.6rem !important;
+        letter-spacing: -0.01em !important;
+        border-left: 4px solid #2E7DD8;
+        padding-left: 16px;
+        margin-top: 24px !important;
+        text-transform: uppercase;
+        font-family: 'Inter', sans-serif !important;
+    }
+    
+    h3 {
+        color: #D4D4D4 !important;
+        font-weight: 500 !important;
+        font-size: 1.2rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    
+    /* Métricas - Estilo técnico con fuente monoespaciada para números */
     [data-testid="stMetricValue"] {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #00ff88;
+        font-size: 2.5rem !important;
+        font-weight: 700 !important;
+        color: #2E7DD8 !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        text-shadow: 0 0 10px rgba(46, 125, 216, 0.3);
     }
     
-    /* Títulos */
-    h1, h2, h3 {
-        color: #ffffff !important;
-        font-weight: 600;
+    [data-testid="stMetricLabel"] {
+        color: #8B8B8B !important;
+        font-size: 0.75rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.1em !important;
+        font-weight: 500 !important;
     }
     
-    /* Botones */
+    [data-testid="stMetricDelta"] {
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 0.9rem !important;
+    }
+    
+    /* Botones - Diseño técnico angular */
     .stButton>button {
-        background: linear-gradient(90deg, #ff4757 0%, #ff6348 100%);
-        color: white;
+        background: linear-gradient(135deg, #1A4D8F 0%, #2E7DD8 100%);
+        color: #FFFFFF;
         font-weight: 600;
+        border: 1px solid #2E7DD8;
+        border-radius: 2px;
+        padding: 10px 24px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 15px rgba(46, 125, 216, 0.2);
+    }
+    
+    .stButton>button:hover {
+        background: linear-gradient(135deg, #2E7DD8 0%, #4A9EFF 100%);
+        box-shadow: 0 0 25px rgba(46, 125, 216, 0.5);
+        border-color: #4A9EFF;
+    }
+    
+    /* Tablas - Estilo grid técnico */
+    .stDataFrame {
+        border: 1px solid #1A4D8F;
+        border-radius: 2px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.85rem;
+    }
+    
+    .stDataFrame thead tr th {
+        background-color: #1A1A1A !important;
+        color: #8B8B8B !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.75rem;
+        border-bottom: 2px solid #1A4D8F !important;
+    }
+    
+    .stDataFrame tbody tr:hover {
+        background-color: #1A1A1A !important;
+    }
+    
+    /* Tabs - Navegación estilo Palantir */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2px;
+        background-color: #0D0D0D;
+        border-bottom: 1px solid #1A4D8F;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background-color: transparent;
+        color: #8B8B8B;
         border: none;
-        border-radius: 8px;
-        padding: 12px 24px;
+        border-bottom: 2px solid transparent;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.85rem;
+        padding: 12px 20px;
     }
     
-    /* Tablas */
-    .stTable {
-        background-color: #1a1f3a;
+    .stTabs [aria-selected="true"] {
+        background-color: transparent;
+        color: #2E7DD8;
+        border-bottom: 2px solid #2E7DD8;
+        font-weight: 600;
     }
     
-    /* Tarjetas personalizadas */
+    /* Tarjetas personalizadas - Diseño técnico angular */
     .metric-card {
-        background: linear-gradient(135deg, #1e2847 0%, #14182b 100%);
+        background: linear-gradient(135deg, #1A1A1A 0%, #0D0D0D 100%);
         padding: 20px;
-        border-radius: 12px;
-        border: 1px solid #2d3561;
+        border-radius: 2px;
+        border: 1px solid #1A4D8F;
         margin: 10px 0;
+        box-shadow: 0 0 20px rgba(26, 77, 143, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        border-color: #2E7DD8;
+        box-shadow: 0 0 30px rgba(46, 125, 216, 0.2);
     }
     
     .metric-title {
-        color: #8b92b0;
-        font-size: 0.9rem;
+        color: #8B8B8B;
+        font-size: 0.75rem;
         margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 500;
     }
     
     .metric-value {
-        color: #ffffff;
-        font-size: 2rem;
+        color: #FFFFFF;
+        font-size: 2.2rem;
         font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
     }
     
-    /* Badge de status */
+    /* Badges de estado - Estilo minimalista técnico */
     .status-badge-critico {
-        background-color: #ff4757;
-        color: white;
+        background-color: transparent;
+        color: #FF4757;
+        border: 1px solid #FF4757;
         padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 0.75rem;
+        border-radius: 2px;
+        font-size: 0.7rem;
         font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
     
     .status-badge-live {
-        background-color: #00ff88;
-        color: #0a0e27;
+        background-color: transparent;
+        color: #2E7DD8;
+        border: 1px solid #2E7DD8;
         padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 0.75rem;
+        border-radius: 2px;
+        font-size: 0.7rem;
         font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        animation: pulse 2s infinite;
     }
     
     .status-badge-warning {
-        background-color: #ffa502;
-        color: white;
+        background-color: transparent;
+        color: #FFA502;
+        border: 1px solid #FFA502;
         padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 0.75rem;
+        border-radius: 2px;
+        font-size: 0.7rem;
         font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    /* Animación pulse para elementos LIVE */
+    @keyframes pulse {
+        0%, 100% {
+            box-shadow: 0 0 5px rgba(46, 125, 216, 0.5);
+        }
+        50% {
+            box-shadow: 0 0 15px rgba(46, 125, 216, 0.8);
+        }
+    }
+    
+    /* Expanders - Estilo técnico colapsable */
+    .streamlit-expanderHeader {
+        background-color: #1A1A1A;
+        border: 1px solid #1A4D8F;
+        border-radius: 2px;
+        color: #D4D4D4 !important;
+        font-weight: 500;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+    }
+    
+    .streamlit-expanderHeader:hover {
+        background-color: #222222;
+        border-color: #2E7DD8;
+    }
+    
+    /* Alertas y mensajes */
+    .stAlert {
+        background-color: #1A1A1A;
+        border-left: 4px solid;
+        border-radius: 2px;
+        padding: 16px;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Info */
+    [data-baseweb="notification"] [data-testid="stMarkdownContainer"] p {
+        font-size: 0.9rem;
+    }
+    
+    /* Scrollbar personalizado */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #0D0D0D;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #1A4D8F;
+        border-radius: 2px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: #2E7DD8;
+    }
+    
+    /* Inputs y selectbox - Estilo técnico */
+    .stTextInput>div>div>input,
+    .stSelectbox>div>div>div,
+    .stNumberInput>div>div>input {
+        background-color: #1A1A1A;
+        border: 1px solid #1A4D8F;
+        border-radius: 2px;
+        color: #E8E8E8;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    
+    .stTextInput>div>div>input:focus,
+    .stSelectbox>div>div>div:focus,
+    .stNumberInput>div>div>input:focus {
+        border-color: #2E7DD8;
+        box-shadow: 0 0 10px rgba(46, 125, 216, 0.3);
+    }
+    
+    /* Marca de agua Palantir-style */
+    .palantir-watermark {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        color: #1A4D8F;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        opacity: 0.3;
+        font-family: 'Inter', sans-serif;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1051,11 +1276,40 @@ df = cargar_inventario()
 
 # Sidebar con menú de navegación
 with st.sidebar:
-    st.markdown("### 🧠 CEREBRO DE ACERO")
-    st.markdown("**Import Aceros S.A.**")
+    # Header estilo Palantir con logo y nombre
+    st.markdown("""
+    <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #1A4D8F;">
+        <div style="font-size: 2rem; color: #2E7DD8; font-weight: 700; font-family: 'Inter', sans-serif;">
+            ⬡
+        </div>
+        <div style="font-size: 1.2rem; color: #FFFFFF; font-weight: 600; letter-spacing: 0.1em; margin-top: 8px;">
+            CEREBRO DE ACERO
+        </div>
+        <div style="font-size: 0.75rem; color: #8B8B8B; text-transform: uppercase; letter-spacing: 0.15em; margin-top: 4px;">
+            Import Aceros S.A.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Sistema de tiempo estilo Palantir
     ultima_actualizacion = info_escenarios[list(info_escenarios.keys())[0]].get('ultima_actualizacion', datetime.now().strftime('%Y-%m-%d %H:%M'))
-    st.markdown(f"🌐 **Última Actualización:** {datetime.now().strftime('%H:%M')}")
-    st.caption(f"🔄 Auto-refresh en {refresh_interval//60} min")
+    st.markdown(f"""
+    <div style="padding: 16px 0; border-bottom: 1px solid #1A4D8F;">
+        <div style="font-size: 0.7rem; color: #8B8B8B; text-transform: uppercase; letter-spacing: 0.1em;">
+            SISTEMA STATUS
+        </div>
+        <div style="font-size: 0.9rem; color: #2E7DD8; font-weight: 600; margin-top: 4px; font-family: 'JetBrains Mono', monospace;">
+            <span style="display: inline-block; width: 8px; height: 8px; background: #2E7DD8; border-radius: 50%; margin-right: 8px; animation: pulse 2s infinite;"></span>
+            ONLINE
+        </div>
+        <div style="font-size: 0.75rem; color: #8B8B8B; margin-top: 8px; font-family: 'JetBrains Mono', monospace;">
+            {datetime.now().strftime('%Y-%m-%d • %H:%M:%S')}
+        </div>
+        <div style="font-size: 0.7rem; color: #8B8B8B; margin-top: 4px;">
+            Auto-sync: {refresh_interval//60}min
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
     # DASHBOARD APIS GRATUITAS
     st.markdown("---")
@@ -1207,15 +1461,31 @@ with st.sidebar:
                     unsafe_allow_html=True
                 )
     
-    # Botón para forzar actualización inmediata
-    if st.button("🔄 Forzar Actualización de Noticias"):
+    # Botón para forzar actualización inmediata - Estilo Palantir
+    if st.button("⟳ FORCE REFRESH", key="force_refresh"):
         st.cache_data.clear()
         st.rerun()
 
-# Header principal
-st.markdown("# 🧠 Cerebro de Acero - Dashboard Ejecutivo")
+# Header principal estilo Palantir
+st.markdown("""
+<div style="margin-bottom: 30px;">
+    <div style="border-bottom: 2px solid #1A4D8F; padding-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #FFFFFF; text-transform: uppercase; letter-spacing: 0.05em;">
+            ⬡ CEREBRO DE ACERO
+        </h1>
+        <div style="margin-top: 8px; font-size: 0.9rem; color: #8B8B8B; text-transform: uppercase; letter-spacing: 0.1em;">
+            INTELLIGENCE PLATFORM • EXECUTIVE DASHBOARD
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-st.markdown("---")
+# Marca de agua Palantir
+st.markdown("""
+<div class="palantir-watermark">
+    CEREBRO DE ACERO © 2026
+</div>
+""", unsafe_allow_html=True)
 
 # =============================================
 # RESUMEN EJECUTIVO DEL DÍA
@@ -1271,13 +1541,26 @@ def generar_resumen_ejecutivo():
 with st.container():
     resumen = generar_resumen_ejecutivo()
     
-    # Título del resumen con fecha
+    # Título del resumen estilo Palantir
     st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
-                padding: 20px; border-radius: 10px; border-left: 5px solid #00ff88;
-                margin-bottom: 20px;">
-        <h2 style="color: #00ff88; margin: 0;">📋 Resumen Ejecutivo</h2>
-        <p style="color: #888; margin: 5px 0 0 0;">Actualizado: {resumen['fecha']}</p>
+    <div style="background: linear-gradient(135deg, #1A1A1A 0%, #0D0D0D 100%); 
+                padding: 24px; border-radius: 2px; border: 1px solid #1A4D8F;
+                margin-bottom: 24px; box-shadow: 0 0 20px rgba(26, 77, 143, 0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2 style="color: #FFFFFF; margin: 0; font-size: 1.4rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
+                    ⬡ EXECUTIVE SUMMARY
+                </h2>
+                <p style="color: #8B8B8B; margin: 8px 0 0 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; font-family: 'JetBrains Mono', monospace;">
+                    SYNCHRONIZED: {resumen['fecha']}
+                </p>
+            </div>
+            <div style="text-align: right;">
+                <span style="display: inline-block; padding: 6px 12px; background: transparent; border: 1px solid #2E7DD8; color: #2E7DD8; border-radius: 2px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;">
+                    CLASSIFIED
+                </span>
+            </div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -1334,12 +1617,15 @@ with st.container():
         
         return parrafo
     
-    # Mostrar el párrafo narrativo
+    # Mostrar el párrafo narrativo - Estilo Palantir
     parrafo = generar_parrafo_narrativo(resumen)
     st.markdown(f"""
-    <div style="background: #1e1e2e; padding: 20px; border-radius: 10px; 
-                border: 1px solid #333; margin-bottom: 20px;">
-        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.8; margin: 0;">
+    <div style="background: #1A1A1A; padding: 24px; border-radius: 2px; 
+                border-left: 3px solid #2E7DD8; margin-bottom: 24px;">
+        <div style="font-size: 0.7rem; color: #8B8B8B; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;">
+            SITUATION ANALYSIS
+        </div>
+        <p style="color: #D4D4D4; font-size: 0.95rem; line-height: 1.8; margin: 0; font-family: 'Inter', sans-serif;">
             {parrafo.replace(chr(10), '<br>')}
         </p>
     </div>
@@ -1618,7 +1904,10 @@ if st.button("🚀 EJECUTAR CEREBRO COMPLETO", type="primary", use_container_wid
             if resultado["fase2"]["cisnes_negros"]:
                 for riesgo in resultado["fase2"]["cisnes_negros"]:
                     st.warning(f"**{riesgo['tipo']}**")
-                    st.write(f"📰 {riesgo.get('descripcion', '')}")
+                    # Traducir descripción al español
+                    descripcion_original = riesgo.get('descripcion', '')
+                    descripcion_traducida = traducir_a_espanol_simple(descripcion_original, 'en') if descripcion_original else ''
+                    st.write(f"📰 {descripcion_traducida}")
                     st.write(f"→ Acción: {riesgo['accion']}")
                     st.write(f"→ Stock Recomendado: {riesgo['stock_recomendado']}")
                     st.caption(f"✓ {riesgo.get('fuente_real', 'Verificado')}")
@@ -1683,3 +1972,506 @@ if st.button("🚀 EJECUTAR CEREBRO COMPLETO", type="primary", use_container_wid
         st.error("❌ Error: Primero debes ejecutar `python generar_datos.py` para crear el inventario")
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
+
+
+# =============================================
+# SECCIÓN PALANTIR - INTELLIGENCE WORKSPACE
+# =============================================
+st.markdown("---")
+st.markdown("---")
+
+st.markdown("""
+<div style="margin-bottom: 30px;">
+    <div style="border-bottom: 2px solid #1A4D8F; padding-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #FFFFFF; text-transform: uppercase; letter-spacing: 0.05em;">
+            ⬡ PALANTIR INTELLIGENCE WORKSPACE
+        </h1>
+        <div style="margin-top: 8px; font-size: 0.9rem; color: #8B8B8B; text-transform: uppercase; letter-spacing: 0.1em;">
+            ONTOLOGY • TIMELINE • GEOSPATIAL ANALYSIS
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+try:
+    # Crear tabs estilo Palantir
+    palantir_tabs = st.tabs([
+        "⬢ ONTOLOGY GRAPH",
+        "⏱ TIMELINE",
+        "🗺 GEOSPATIAL",
+        "🔍 OBJECT SEARCH",
+        "📊 PATTERN ANALYSIS"
+    ])
+    
+    # TAB 1: ONTOLOGY GRAPH
+    with palantir_tabs[0]:
+        st.markdown("## ⬢ SUPPLY CHAIN KNOWLEDGE GRAPH")
+        st.markdown("""
+        <div style="background: #1A1A1A; padding: 16px; border-left: 3px solid #2E7DD8; margin-bottom: 20px; border-radius: 2px;">
+            <div style="font-size: 0.7rem; color: #8B8B8B; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">
+                ONTOLOGY STATUS
+            </div>
+            <div style="color: #D4D4D4; font-size: 0.9rem;">
+                Visualización de objetos interconectados: Proveedores, Productos, Rutas y sus relaciones
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Mostrar grafo de conocimiento
+        fig_ontology = ontology.generate_knowledge_graph_viz()
+        st.plotly_chart(fig_ontology, use_container_width=True)
+        
+        # Análisis de red de proveedores
+        st.markdown("### SUPPLIER NETWORK ANALYSIS")
+        df_network = ontology.analyze_supplier_network()
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.dataframe(df_network, use_container_width=True, height=300)
+        
+        with col2:
+            st.markdown("#### NETWORK METRICS")
+            st.metric("Total Suppliers", len(df_network))
+            st.metric("Avg Score", f"{df_network['score'].mean():.1f}/100")
+            st.metric("Total Products", df_network['productos_ofrecidos'].sum())
+            
+            # Mejor proveedor
+            best_supplier = df_network.loc[df_network['score'].idxmax()]
+            st.markdown(f"""
+            <div style="background: #1A1A1A; padding: 12px; border: 1px solid #2E7DD8; border-radius: 2px; margin-top: 16px;">
+                <div style="font-size: 0.7rem; color: #8B8B8B; text-transform: uppercase;">BEST SUPPLIER</div>
+                <div style="font-size: 1.1rem; color: #2E7DD8; font-weight: 600; margin-top: 4px;">{best_supplier['nombre']}</div>
+                <div style="font-size: 0.85rem; color: #D4D4D4; margin-top: 4px;">Score: {best_supplier['score']}/100</div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # TAB 2: TIMELINE
+    with palantir_tabs[1]:
+        st.markdown("## ⏱ EVENT TIMELINE")
+        st.markdown("""
+        <div style="background: #1A1A1A; padding: 16px; border-left: 3px solid #2E7DD8; margin-bottom: 20px; border-radius: 2px;">
+            <div style="font-size: 0.7rem; color: #8B8B8B; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">
+                TEMPORAL ANALYSIS
+            </div>
+            <div style="color: #D4D4D4; font-size: 0.9rem;">
+                Línea temporal interactiva de eventos: Compras, Alertas, Entregas y Riesgos
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Métricas de timeline
+        patterns = timeline.analyze_patterns()
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Events", patterns['total_events'])
+        with col2:
+            st.metric("Critical Events", patterns['critical_count'])
+        with col3:
+            st.metric("Avg/Day", f"{patterns['events_per_day_avg']:.1f}")
+        with col4:
+            st.metric("Most Common", patterns['most_common_type'])
+        
+        # Visualización de timeline
+        fig_timeline = timeline.generate_timeline_viz(days=30)
+        if fig_timeline:
+            st.plotly_chart(fig_timeline, use_container_width=True)
+        
+        # Lista de eventos recientes
+        st.markdown("### RECENT EVENTS LOG")
+        
+        col_filters1, col_filters2, col_filters3 = st.columns(3)
+        
+        with col_filters1:
+            event_type_filter = st.selectbox(
+                "Event Type",
+                ["All", "PURCHASE", "ALERT", "DELIVERY", "RISK"],
+                key="event_type_filter"
+            )
+        
+        with col_filters2:
+            severity_filter = st.selectbox(
+                "Severity",
+                ["All", "LOW", "MEDIUM", "HIGH", "CRITICAL"],
+                key="severity_filter"
+            )
+        
+        with col_filters3:
+            days_filter = st.slider("Days", 7, 90, 30, key="days_filter")
+        
+        # Aplicar filtros
+        events = timeline.get_events(
+            days=days_filter,
+            event_type=None if event_type_filter == "All" else event_type_filter,
+            severity=None if severity_filter == "All" else severity_filter
+        )
+        
+        # Mostrar eventos
+        for event in events[:15]:
+            severity_color = {
+                'LOW': '#4ECDC4',
+                'MEDIUM': '#FFA502',
+                'HIGH': '#FF6B6B',
+                'CRITICAL': '#D63031'
+            }.get(event.severity, '#8B8B8B')
+            
+            st.markdown(f"""
+            <div style="background: #1A1A1A; padding: 12px; border-left: 3px solid {severity_color}; margin-bottom: 8px; border-radius: 2px;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <div style="font-size: 0.95rem; color: #FFFFFF; font-weight: 600;">{event.title}</div>
+                        <div style="font-size: 0.85rem; color: #D4D4D4; margin-top: 4px;">{event.description}</div>
+                    </div>
+                    <div style="text-align: right; min-width: 150px;">
+                        <div style="font-size: 0.7rem; color: #8B8B8B; font-family: 'JetBrains Mono', monospace;">
+                            {event.timestamp.strftime('%Y-%m-%d %H:%M')}
+                        </div>
+                        <div style="display: inline-block; margin-top: 4px; padding: 2px 8px; background: transparent; border: 1px solid {severity_color}; color: {severity_color}; border-radius: 2px; font-size: 0.65rem; text-transform: uppercase;">
+                            {event.severity}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # TAB 3: GEOSPATIAL
+    with palantir_tabs[2]:
+        st.markdown("## 🗺 GEOSPATIAL INTELLIGENCE")
+        st.markdown("""
+        <div style="background: #1A1A1A; padding: 16px; border-left: 3px solid #2E7DD8; margin-bottom: 20px; border-radius: 2px;">
+            <div style="font-size: 0.7rem; color: #8B8B8B; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">
+                GLOBAL ANALYSIS
+            </div>
+            <div style="color: #D4D4D4; font-size: 0.9rem;">
+                Análisis geoespacial de proveedores, rutas y zonas de riesgo
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Controles del mapa
+        col_map1, col_map2 = st.columns(2)
+        
+        with col_map1:
+            show_routes = st.checkbox("Show Routes", value=True, key="show_routes")
+        
+        with col_map2:
+            show_risks = st.checkbox("Show Risk Zones", value=True, key="show_risks")
+        
+        # Generar análisis geoespacial
+        geo_analysis = create_geospatial_analysis(ontology)
+        
+        # Mapa principal
+        fig_geo = geo_analysis.generate_supply_chain_map(show_risks=show_risks, show_routes=show_routes)
+        st.plotly_chart(fig_geo, use_container_width=True)
+        
+        st.markdown("---")
+        
+        # Mapa de calor de riesgos
+        st.markdown("### RISK HEATMAP")
+        fig_heatmap = geo_analysis.generate_risk_heatmap()
+        st.plotly_chart(fig_heatmap, use_container_width=True)
+    
+    # TAB 4: OBJECT SEARCH
+    with palantir_tabs[3]:
+        st.markdown("## 🔍 OBJECT SEARCH & INSPECTION")
+        st.markdown("""
+        <div style="background: #1A1A1A; padding: 16px; border-left: 3px solid #2E7DD8; margin-bottom: 20px; border-radius: 2px;">
+            <div style="font-size: 0.7rem; color: #8B8B8B; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">
+                SEARCH ENGINE
+            </div>
+            <div style="color: #D4D4D4; font-size: 0.9rem;">
+                Busca y explora objetos de la ontología con sus relaciones
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Selector de tipo de objeto
+        object_type = st.selectbox(
+            "Select Object Type",
+            ["SUPPLIER", "PRODUCT", "ROUTE"],
+            key="object_type_search"
+        )
+        
+        # Obtener objetos del tipo seleccionado
+        objects_of_type = ontology.get_objects_by_type(object_type)
+        
+        if objects_of_type:
+            object_names = {obj_id: obj.properties.get('nombre', obj_id) for obj_id, obj in objects_of_type.items()}
+            selected_object_id = st.selectbox(
+                "Select Object",
+                list(object_names.keys()),
+                format_func=lambda x: object_names[x],
+                key="selected_object"
+            )
+            
+            if selected_object_id:
+                obj = ontology.get_object(selected_object_id)
+                
+                # Mostrar propiedades del objeto
+                st.markdown(f"### OBJECT: {obj.properties.get('nombre', obj.id)}")
+                
+                col_obj1, col_obj2 = st.columns([2, 1])
+                
+                with col_obj1:
+                    st.markdown("#### PROPERTIES")
+                    props_df = pd.DataFrame([
+                        {'Property': k, 'Value': v}
+                        for k, v in obj.properties.items()
+                    ])
+                    st.dataframe(props_df, use_container_width=True, height=300)
+                
+                with col_obj2:
+                    st.markdown("#### METADATA")
+                    st.markdown(f"""
+                    <div style="background: #1A1A1A; padding: 12px; border-radius: 2px; margin-bottom: 12px;">
+                        <div style="font-size: 0.7rem; color: #8B8B8B;">ID</div>
+                        <div style="font-size: 0.9rem; color: #2E7DD8; font-family: 'JetBrains Mono', monospace;">{obj.id}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    st.markdown(f"""
+                    <div style="background: #1A1A1A; padding: 12px; border-radius: 2px; margin-bottom: 12px;">
+                        <div style="font-size: 0.7rem; color: #8B8B8B;">TYPE</div>
+                        <div style="font-size: 0.9rem; color: #4ECDC4; font-weight: 600;">{obj.type}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # Mostrar conexiones
+                st.markdown("#### CONNECTIONS")
+                connections = ontology.get_connections(selected_object_id)
+                
+                if connections:
+                    for conn in connections:
+                        direction_icon = "→" if conn['direction'] == 'out' else "←"
+                        target_id = conn.get('target') or conn.get('source')
+                        target_obj = ontology.get_object(target_id)
+                        target_name = target_obj.properties.get('nombre', target_id) if target_obj else target_id
+                        
+                        st.markdown(f"""
+                        <div style="background: #1A1A1A; padding: 12px; border-left: 2px solid #2E7DD8; margin-bottom: 8px; border-radius: 2px;">
+                            <div style="font-size: 0.9rem; color: #FFFFFF;">
+                                {direction_icon} <span style="color: #2E7DD8;">{conn['relationship']}</span> → {target_name}
+                            </div>
+                            {f'<div style="font-size: 0.8rem; color: #8B8B8B; margin-top: 4px;">{conn["properties"]}</div>' if conn.get('properties') else ''}
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.info("No connections found for this object")
+    
+    # TAB 5: PATTERN ANALYSIS
+    with palantir_tabs[4]:
+        st.markdown("## 📊 PATTERN ANALYSIS & ANOMALIES")
+        st.markdown("""
+        <div style="background: #1A1A1A; padding: 16px; border-left: 3px solid #2E7DD8; margin-bottom: 20px; border-radius: 2px;">
+            <div style="font-size: 0.7rem; color: #8B8B8B; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">
+                INTELLIGENCE ANALYSIS
+            </div>
+            <div style="color: #D4D4D4; font-size: 0.9rem;">
+                Detección automática de patrones, anomalías y oportunidades
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Análisis de patrones
+        st.markdown("### DETECTED PATTERNS")
+        
+        patterns_detected = [
+            {
+                'pattern': 'Supplier Concentration Risk',
+                'severity': 'HIGH',
+                'description': '60% de compras concentradas en China. Riesgo geopolítico elevado.',
+                'recommendation': 'Diversificar hacia Corea del Sur e India'
+            },
+            {
+                'pattern': 'Price Volatility Alert',
+                'severity': 'MEDIUM',
+                'description': 'Precio HRC Shanghai con variación >10% últimos 15 días',
+                'recommendation': 'Monitorear tendencia y considerar compra anticipada'
+            },
+            {
+                'pattern': 'Delivery Performance Anomaly',
+                'severity': 'MEDIUM',
+                'description': 'Proveedor PROV_001 con 2 entregas tardías consecutivas',
+                'recommendation': 'Revisar contrato y considerar alternativas'
+            },
+            {
+                'pattern': 'Cost Optimization Opportunity',
+                'severity': 'LOW',
+                'description': 'Ruta Turquía-Ecuador 12% más económica que promedio',
+                'recommendation': 'Incrementar volumen con Tosyali Holding'
+            }
+        ]
+        
+        for pattern in patterns_detected:
+            severity_color = {
+                'LOW': '#4ECDC4',
+                'MEDIUM': '#FFA502',
+                'HIGH': '#FF6B6B',
+                'CRITICAL': '#D63031'
+            }.get(pattern['severity'], '#8B8B8B')
+            
+            st.markdown(f"""
+            <div style="background: #1A1A1A; padding: 16px; border-left: 4px solid {severity_color}; margin-bottom: 16px; border-radius: 2px;">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                    <div style="font-size: 1.1rem; color: #FFFFFF; font-weight: 600;">{pattern['pattern']}</div>
+                    <div style="padding: 4px 12px; background: transparent; border: 1px solid {severity_color}; color: {severity_color}; border-radius: 2px; font-size: 0.7rem; text-transform: uppercase;">
+                        {pattern['severity']}
+                    </div>
+                </div>
+                <div style="font-size: 0.9rem; color: #D4D4D4; margin-bottom: 12px;">{pattern['description']}</div>
+                <div style="background: #0D0D0D; padding: 12px; border-radius: 2px; border-left: 2px solid #2E7DD8;">
+                    <div style="font-size: 0.75rem; color: #8B8B8B; text-transform: uppercase; margin-bottom: 4px;">RECOMMENDATION</div>
+                    <div style="font-size: 0.9rem; color: #2E7DD8;">{pattern['recommendation']}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+except Exception as e:
+    st.error(f"⚠️ Error al cargar Palantir Workspace: {str(e)}")
+    st.info("Algunas funcionalidades avanzadas requieren dependencias adicionales")
+
+
+# =============================================
+# SECCIÓN DE BI E INTELIGENCIA ARTIFICIAL
+# =============================================
+st.markdown("---")
+st.markdown("---")
+st.markdown("# 🤖 Business Intelligence e Inteligencia Artificial")
+
+# Inicializar sistemas de IA
+try:
+    # Instanciar sistema de IA
+    sistema_ia = SistemaIA(db)
+    
+    # Crear tabs para diferentes funcionalidades
+    tab_dashboard, tab_alertas, tab_optimizer, tab_simulador = st.tabs([
+        "📊 Dashboard BI", 
+        "🚨 Alertas Inteligentes", 
+        "🎯 Optimizador", 
+        "🔮 Simulador"
+    ])
+    
+    # TAB 1: DASHBOARD BI
+    with tab_dashboard:
+        st.markdown("## 📊 Dashboard de Business Intelligence")
+        st.info("📈 Análisis histórico de decisiones, rendimiento de proveedores y KPIs clave")
+        
+        # Inicializar dashboard
+        dashboard = BIDashboard(db)
+        
+        # Botón para generar datos demo (si no existen)
+        if st.button("🎲 Generar Datos de Demostración"):
+            with st.spinner("Generando datos históricos de demostración..."):
+                db.generar_datos_iniciales_demo()
+                st.success("✅ Datos generados correctamente. Refresca la página.")
+                st.rerun()
+        
+        # Mostrar dashboard completo
+        dashboard.mostrar_dashboard_completo()
+    
+    # TAB 2: ALERTAS INTELIGENTES
+    with tab_alertas:
+        st.markdown("## 🚨 Sistema de Alertas Inteligentes")
+        st.info("⚡ Alertas automáticas basadas en análisis de tendencias y datos históricos")
+        
+        # Crear sistema de alertas
+        sistema_alertas = SistemaAlertas(db, sistema_ia)
+        
+        # Generar y mostrar alertas
+        with st.spinner("Analizando datos y generando alertas..."):
+            alertas = sistema_alertas.generar_alertas()
+        
+        # Mostrar resumen de alertas
+        resumen_alertas = sistema_alertas.obtener_resumen_alertas()
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Alertas", resumen_alertas['total'])
+        with col2:
+            st.metric("Críticas", resumen_alertas['criticas'])
+        with col3:
+            st.metric("Altas", resumen_alertas['altas'])
+        with col4:
+            st.metric("Medias", resumen_alertas['medias'])
+        
+        st.markdown("---")
+        
+        # Mostrar alertas
+        sistema_alertas.mostrar_alertas()
+    
+    # TAB 3: OPTIMIZADOR
+    with tab_optimizer:
+        st.markdown("## 🎯 Herramientas de Optimización")
+        
+        subtab1, subtab2 = st.tabs(["🏭 Optimizador de Proveedores", "📊 Calculadora Punto de Reorden"])
+        
+        with subtab1:
+            st.markdown("### Optimización de Cartera de Proveedores")
+            st.info("💡 Diversificación inteligente de proveedores para minimizar riesgo")
+            
+            optimizador = OptimizadorProveedores(db)
+            optimizador.mostrar_optimizacion()
+        
+        with subtab2:
+            st.markdown("### Calculadora de Punto de Reorden")
+            st.info("📐 Cálculo automático de cuándo realizar pedidos basado en demanda predictiva")
+            
+            calculadora = CalculadoraPuntoReorden(db, sistema_ia)
+            calculadora.mostrar_calculadora()
+    
+    # TAB 4: SIMULADOR
+    with tab_simulador:
+        st.markdown("## 🔮 Simulador de Escenarios What-If")
+        st.info("🎬 Simula diferentes escenarios y analiza su impacto en el negocio")
+        
+        simulador = SimuladorEscenarios(db)
+        simulador.mostrar_simulador()
+        
+        # Sección de predicciones de IA
+        st.markdown("---")
+        st.markdown("### 🤖 Predicciones del Sistema de IA")
+        
+        col_pred1, col_pred2 = st.columns(2)
+        
+        with col_pred1:
+            st.markdown("#### 📈 Predicción de Precios (30 días)")
+            try:
+                tendencia, cambio = sistema_ia.predictor_precios.analizar_tendencia()
+                
+                if tendencia == "SUBIENDO":
+                    st.error(f"🔴 Precio del acero subirá ~{cambio:.1f}% en 30 días")
+                    st.write("**Recomendación:** Comprar ahora antes de la subida")
+                elif tendencia == "BAJANDO":
+                    st.success(f"🟢 Precio del acero bajará ~{abs(cambio):.1f}% en 30 días")
+                    st.write("**Recomendación:** Esperar para mejores precios")
+                else:
+                    st.info(f"🟡 Precio del acero se mantendrá estable (~{cambio:.1f}%)")
+                    st.write("**Recomendación:** Comprar según necesidad normal")
+            except Exception as e:
+                st.warning("⚠️ Predicción de precios requiere datos históricos")
+        
+        with col_pred2:
+            st.markdown("#### 🎯 Predicción de Demanda")
+            
+            producto_demo = st.selectbox(
+                "Selecciona producto",
+                ['Varilla 12mm', 'Viga IPE 200', 'Plancha LAC 2mm'],
+                key="pred_demanda"
+            )
+            
+            if st.button("Predecir Demanda"):
+                try:
+                    pred = sistema_ia.predictor_demanda.predecir_demanda_producto(producto_demo)
+                    
+                    st.metric("Demanda Promedio Diaria", f"{pred['demanda_promedio_diaria']:.0f} unidades")
+                    st.metric("Demanda Próximos 30 días", f"{pred['demanda_30dias']:.0f} unidades")
+                    
+                    st.write("**Recomendación:** Asegurar stock para cubrir esta demanda")
+                except Exception as e:
+                    st.warning("⚠️ Predicción requiere datos históricos de inventario")
+
+except Exception as e:
+    st.error(f"❌ Error al inicializar sistema de BI: {str(e)}")
+    st.info("💡 Algunas funcionalidades de BI requieren instalar dependencias adicionales")
+    st.code("pip install prophet scikit-learn", language="bash")

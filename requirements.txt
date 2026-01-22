@@ -10,3 +10,10 @@ google-genai
 deep-translator
 feedparser
 akshare
+prophet
+tensorflow
+scikit-learn
+sqlalchemy
+numpy
+scipy
+networkx
