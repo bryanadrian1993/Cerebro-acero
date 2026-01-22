@@ -1,3 +1,7 @@
+import streamlit as st
+st.title("Cargando plataforma... (diagnóstico)")
+st.write("Si ves este mensaje, la app está arrancando. Si no, hay un error crítico antes de este punto.")
+
 """
 AKSHARE - Precios de Acero de China (Shanghai Futures Exchange)
 ================================================================
