@@ -26,324 +26,31 @@ from ai_models import SistemaIA
 from bi_dashboard import BIDashboard
 from alertas_inteligentes import SistemaAlertas
 from optimizer import OptimizadorProveedores, CalculadoraPuntoReorden, SimuladorEscenarios
-# Sistema Palantir - Ontología, Timeline y Geoespacial
-from palantir_ontology import ontology, SupplyChainOntology
-from palantir_timeline import timeline, PalantirTimeline
-from palantir_geospatial import create_geospatial_analysis
+
+
+# --- CONFIGURACIÓN NewsAPI ---
+try:
+    newsapi_key = st.secrets["NEWSAPI_KEY"]
+    newsapi_client = NewsApiClient(api_key=newsapi_key)
+except Exception:
+    newsapi_client = None
+
 
 # --- TRADUCCIÓN SIMPLE AL ESPAÑOL ---
 # Cache de traducciones para evitar llamadas repetidas a APIs
 _cache_traducciones = {}
 
 def traducir_a_espanol_simple(texto, idioma_origen='en'):
-    """
-    Traduce texto al español usando:
-    1. Gemini Pro (Google - gratis, 60 req/min)
-    2. OpenAI GPT-3.5 (fallback si hay crédito)
-    3. Patrones de frases (fallback final)
-    """
-    if idioma_origen == 'es':
-        return texto
-    
-    # Cache: evitar llamadas repetidas a APIs
-    if texto in _cache_traducciones:
-        return _cache_traducciones[texto]
-    
-    resultado = None
-    
-    # 🥇 ESTRATEGIA 1: Gemini (primaria - gratis)
-    if gemini_client:
-        try:
-            from google import genai
-            prompt = f"Translate this text to Spanish (only output the translation, no explanations): {texto}"
-            response = gemini_client.models.generate_content(
-                model='gemini-2.0-flash',
-                contents=prompt
-            )
-            resultado = response.text.strip()
-            # Limpiar comillas si Gemini las agrega
-            if resultado.startswith('"') and resultado.endswith('"'):
-                resultado = resultado[1:-1]
-            if resultado.startswith("'") and resultado.endswith("'"):
-                resultado = resultado[1:-1]
-            _cache_traducciones[texto] = resultado
-            print(f"[GEMINI] Traducido: {texto[:50]}... -> {resultado[:50]}...")
-            return resultado
-        except Exception as e:
-            # Si falla Gemini, continuar con OpenAI
-            print(f"[ERROR GEMINI] {str(e)}")
-            pass
-    
-    # 🥈 ESTRATEGIA 2: OpenAI GPT-3.5 (fallback si hay crédito)
-    if OPENAI_API_KEY and not resultado:
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=OPENAI_API_KEY)
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{
-                    "role": "user",
-                    "content": f"Traduce al español con gramática perfecta: {texto}"
-                }],
-                max_tokens=200
-            )
-            resultado = response.choices[0].message.content.strip()
-            _cache_traducciones[texto] = resultado
-            return resultado
-        except:
-            # Si OpenAI falla (sin crédito), continuar con googletrans
-            pass
-    
-    # 🥉 ESTRATEGIA 3: Deep Translator (gratis sin límites)
-    if not resultado:
-        try:
-            from deep_translator import GoogleTranslator
-            resultado = GoogleTranslator(source='en', target='es').translate(texto)
-            _cache_traducciones[texto] = resultado
-            print(f"[DEEP_TRANSLATOR] Traducido: {texto[:50]}... -> {resultado[:50]}...")
-            return resultado
-        except Exception as e:
-            print(f"[ERROR DEEP_TRANSLATOR] {str(e)}")
-            pass
-    
-    # 🏅 ESTRATEGIA 4: Patrones de frases (fallback final - sin APIs)
-    import re
-    
-    # Traducir frases completas comunes
-    patrones_frases = {
-        r"China hits growth goal": "China alcanza meta de crecimiento",
-        r"after exports boom": "tras auge de exportaciones",
-        r"defied US tariffs": "desafía aranceles estadounidenses",
-        r"what tariffs has Trump announced": "qué aranceles ha anunciado Trump",
-        r"and why": "y por qué",
-        r"Trump's volatile trade policy": "la volátil política comercial de Trump",
-        r"thrown the world economy into chaos": "sumido la economía mundial en caos",
-        r"put some US prices up": "elevado algunos precios en EE.UU.",
-        r"official figures suggest": "las cifras oficiales sugieren",
-        r"China's economy": "la economía de China",
-        r"hit its target": "alcanzó su objetivo",
-        r"analysts have cast doubt": "los analistas han expresado dudas",
-        r"on the data": "sobre los datos",
-        r"Trump tariff threat": "amenaza arancelaria de Trump",
-        r"over Greenland unacceptable": "sobre Groenlandia inaceptable",
-        r"European leaders say": "dicen líderes europeos"
-    }
-    
-    texto_traducido = texto
-    for patron_en, texto_es in patrones_frases.items():
-        texto_traducido = re.sub(patron_en, texto_es, texto_traducido, flags=re.IGNORECASE)
-    
-    # Palabras individuales (respaldo)
-    traducciones_palabras = {
-        'steel': 'acero', 'tariff': 'arancel', 'tariffs': 'aranceles', 'trade': 'comercio',
-        'exports': 'exportaciones', 'export': 'exportación', 'imports': 'importaciones',
-        'growth': 'crecimiento', 'economy': 'economía', 'target': 'objetivo',
-        'figures': 'cifras', 'data': 'datos', 'analysts': 'analistas',
-        'suggest': 'sugieren', 'cast': 'expresaron', 'doubt': 'dudas',
-        'boom': 'auge', 'defy': 'desafía', 'defied': 'desafió'
-    }
-    
-    for palabra_en, palabra_es in traducciones_palabras.items():
-        texto_traducido = re.sub(r'\b' + palabra_en + r'\b', palabra_es, texto_traducido, flags=re.IGNORECASE)
-    
-    # Guardar en caché
-    _cache_traducciones[texto] = texto_traducido
-    return texto_traducido
 
-# --- CONFIGURACIÓN DE LA PÁGINA ---
-st.set_page_config(
-    page_title="CEREBRO DE ACERO - Import Aceros S.A. | Sistema de Inteligencia Logística v1.0",
-    page_icon="🧠",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# --- ⚠️ CONFIGURACIÓN SEGURA DE API KEYS ---
-# Las claves se cargan desde archivos seguros, NUNCA del código
-try:
-    # Intenta cargar desde Streamlit Secrets (Cloud)
-    NEWSAPI_KEY = st.secrets.get("NEWSAPI_KEY", "")
-    OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
-    GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
-except:
-    # Si no está en Cloud, busca en secrets.toml local (NO se sube a GitHub)
-    NEWSAPI_KEY = ""
-    OPENAI_API_KEY = ""
-    GEMINI_API_KEY = "AIzaSyCygQTij-aojvrYB4xY02feLngZp_kTy70"
-
-# WorldBank API (No requiere key - pública)
-WORLDBANK_API_ENABLED = True
-
-# Inicializar cliente de Gemini (Google - nuevo SDK)
-gemini_client = None
-if GEMINI_API_KEY:
+    # ...existing code...
     try:
-        from google import genai
-        gemini_client = genai.Client(api_key=GEMINI_API_KEY)
-        st.success("✅ Gemini AI activado correctamente")
-    except ImportError:
-        st.error("⚠️ Instale google-genai: pip install google-genai")
-    except Exception as e:
-        st.error(f"⚠️ Error al inicializar Gemini: {e}")
-else:
-    st.warning("⚠️ Gemini AI no configurado - Configure GEMINI_API_KEY en secrets.toml")
-# -------------------------------------
-
-client = None
-if OPENAI_API_KEY:
-    try:
-        client = OpenAI(api_key=OPENAI_API_KEY)
+        # ...existing code...
+        return {
+            "precio_acero_index": ultimo_precio,
+            "tendencia": "SUBIENDO" if ultimo_precio > 100 else "BAJANDO"
+        }
     except:
         pass
-
-# Inicializar NewsAPI
-newsapi_client = None
-if NEWSAPI_KEY:
-    try:
-        newsapi_client = NewsApiClient(api_key=NEWSAPI_KEY)
-    except:
-        pass
-
-# ========================================
-# SISTEMA DE NOTICIAS MUNDIALES (APIs REALES)
-# ========================================
-
-def obtener_noticias_reales_newsapi():
-    """Obtiene noticias reales desde NewsAPI + GDELT (híbrido sin límites)"""
-    
-    noticias_newsapi = []
-    
-    if not newsapi_client:
-        # Si no hay NewsAPI, usar GDELT directo
-        return combinar_noticias_newsapi_gdelt([], max_total=20)
-    
-    try:
-        noticias_detectadas = []
-        fecha_desde = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
-        
-        # 1. NOTICIAS TOP GLOBALES (business + technology)
-        try:
-            top_news = newsapi_client.get_top_headlines(
-                category='business',
-                language='en',
-                page_size=10
-            )
-            
-            if top_news['status'] == 'ok' and top_news['totalResults'] > 0:
-                for article in top_news['articles'][:5]:
-                    titulo_lower = article['title'].lower()
-                    # Filtrar noticias relevantes para acero/logística/comercio
-                    if any(word in titulo_lower for word in ['steel', 'metal', 'iron', 'shipping', 'trade', 'export', 'import', 'tariff', 'china', 'supply chain', 'port', 'construction', 'infrastructure', 'mining']):
-                        noticias_detectadas.append({
-                            "titulo": article['title'],
-                            "descripcion": article['description'] or article['title'],
-                            "fuente": article['source']['name'],
-                            "fecha": article['publishedAt'],
-                            "url": article['url'],
-                            "tipo": "Crisis" if any(w in titulo_lower for w in ['crisis', 'war', 'strike', 'shortage', 'disruption']) else "Oportunidad",
-                            "keyword": "global business"
-                        })
-        except Exception as e:
-            print(f"Error en top headlines: {e}")
-        
-        # 2. BÚSQUEDAS ESPECÍFICAS - CRISIS
-        keywords_crisis = [
-            'steel industry crisis',
-            'shipping disruption', 
-            'trade war tariff',
-            'supply chain shortage'
-        ]
-        
-        for keyword in keywords_crisis[:2]:
-            try:
-                response = newsapi_client.get_everything(
-                    q=keyword,
-                    from_param=fecha_desde,
-                    language='en',
-                    sort_by='publishedAt',
-                    page_size=3
-                )
-                
-                if response['status'] == 'ok' and response['totalResults'] > 0:
-                    for article in response['articles'][:1]:
-                        noticias_detectadas.append({
-                            "titulo": article['title'],
-                            "descripcion": article['description'] or article['title'],
-                            "fuente": article['source']['name'],
-                            "fecha": article['publishedAt'],
-                            "url": article['url'],
-                            "tipo": "Crisis",
-                            "keyword": keyword
-                        })
-            except Exception as e:
-                print(f"Error en keyword {keyword}: {e}")
-                continue
-        
-        # 3. BÚSQUEDAS ESPECÍFICAS - OPORTUNIDADES
-        keywords_oportunidad = [
-            'infrastructure project',
-            'mining boom',
-            'construction growth'
-        ]
-        
-        for keyword in keywords_oportunidad[:2]:
-            try:
-                response = newsapi_client.get_everything(
-                    q=keyword,
-                    from_param=fecha_desde,
-                    language='en',
-                    sort_by='publishedAt',
-                    page_size=3
-                )
-                
-                if response['status'] == 'ok' and response['totalResults'] > 0:
-                    for article in response['articles'][:1]:
-                        noticias_detectadas.append({
-                            "titulo": article['title'],
-                            "descripcion": article['description'] or article['title'],
-                            "fuente": article['source']['name'],
-                            "fecha": article['publishedAt'],
-                            "url": article['url'],
-                            "tipo": "Oportunidad",
-                            "keyword": keyword
-                        })
-            except Exception as e:
-                print(f"Error en keyword {keyword}: {e}")
-                continue
-        
-        # print(f"NewsAPI: {len(noticias_detectadas)} noticias obtenidas")
-        noticias_newsapi = noticias_detectadas[:15]
-        
-    except Exception as e:
-        # print(f"Error NewsAPI: {str(e)}")
-        noticias_newsapi = []
-    
-    # COMBINACIÓN HÍBRIDA: NewsAPI + GDELT
-    # Si NewsAPI agotado, GDELT toma el 100%
-    return combinar_noticias_newsapi_gdelt(noticias_newsapi, max_total=20)
-
-def obtener_datos_economicos_worldbank():
-    """Obtiene indicadores económicos desde World Bank API"""
-    
-    if not WORLDBANK_API_ENABLED:
-        return {}
-    
-    try:
-        # Obtener precio de commodities (acero aproximado)
-        url = "https://api.worldbank.org/v2/country/all/indicator/PMACP.IRON?format=json&date=2024:2026"
-        response = requests.get(url, timeout=5)
-        
-        if response.status_code == 200:
-            data = response.json()
-            if len(data) > 1 and data[1]:
-                ultimo_precio = data[1][0]['value'] if data[1][0]['value'] else 100
-                return {
-                    "precio_acero_index": ultimo_precio,
-                    "tendencia": "SUBIENDO" if ultimo_precio > 100 else "BAJANDO"
-                }
-    except:
-        pass
-    
     return {"precio_acero_index": 100, "tendencia": "ESTABLE"}
 
 def clasificar_noticia_en_escenario(noticia):
@@ -474,42 +181,21 @@ def clasificar_noticia_en_escenario(noticia):
     # Si no tiene ninguna relación, ignorar
     return None
 
-def obtener_noticias_mundiales():
-    """Función principal: obtiene SOLO noticias RELEVANTES desde NewsAPI"""
-    
-    # Verificar que NewsAPI esté configurada
+def obtener_noticias_reales_newsapi():
+    """Obtiene noticias reales desde NewsAPI si está configurado, si no retorna lista vacía."""
     if not newsapi_client:
-        st.error("⚠️ ERROR: NewsAPI no está configurada. Configure NEWSAPI_KEY en .streamlit/secrets.toml")
-        st.stop()
-    
-    # Obtener noticias reales
-    noticias_reales = obtener_noticias_reales_newsapi()
-    
-    if not noticias_reales:
-        # Sin noticias = Sin alertas
         return []
-    
-    # Procesar y capturar TODAS las noticias relevantes (ALTA, MEDIA, BAJA)
-    noticias_relevantes = []
-    for noticia in noticias_reales:
-        clasificacion = clasificar_noticia_en_escenario(noticia)
-        
-        # Agregar si tiene alguna clasificación (incluye ALTA, MEDIA, BAJA)
-        if clasificacion:
-            noticias_relevantes.append({
-                "titulo": noticia['titulo'][:100],
-                "categoria": clasificacion['categoria'],
-                "impacto": clasificacion['impacto'],
-                "escenario": clasificacion['escenario'],
-                "descripcion": noticia['descripcion'][:150] if noticia['descripcion'] else noticia['titulo'][:150],
-                "fuente": noticia.get('fuente', 'NewsAPI'),
-                "url": noticia.get('url', '#'),  # ⭐ AGREGAR URL AQUÍ
-                "idioma": noticia.get('idioma', 'en'),  # ⭐ Y EL IDIOMA
-                "relevancia": clasificacion['relevancia'],
-                "es_real": True
-            })
-    
-    return noticias_relevantes
+    try:
+        top_headlines = newsapi_client.get_top_headlines(language='en', page_size=50)
+        if top_headlines and 'articles' in top_headlines:
+            return [{
+                'titulo': art.get('title', ''),
+                'descripcion': art.get('description', ''),
+                'keyword': art.get('source', {}).get('name', '')
+            } for art in top_headlines['articles']]
+    except Exception:
+        pass
+    return []
 
 def generar_escenarios_desde_noticias():
     """Genera escenarios SOLO con noticias relevantes - Sin relleno artificial"""
@@ -556,313 +242,7 @@ def generar_escenarios_desde_noticias():
     
     return escenarios, info_escenarios
 
-# --- CSS PERSONALIZADO ESTILO PALANTIR ---
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
-    
-    /* === PALANTIR THEME: Dark Intelligence Platform === */
-    
-    /* Fondo principal - Negro profundo */
-    .stApp {
-        background-color: #0D0D0D;
-        color: #E8E8E8;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    
-    /* Sidebar - Panel lateral oscuro con borde azul */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0A0A0A 0%, #111111 100%);
-        border-right: 1px solid #1A4D8F;
-    }
-    
-    /* Títulos - Estilo Palantir con línea azul */
-    h1 {
-        color: #FFFFFF !important;
-        font-weight: 600 !important;
-        font-size: 2.2rem !important;
-        letter-spacing: -0.02em !important;
-        border-bottom: 2px solid #1A4D8F;
-        padding-bottom: 12px;
-        margin-bottom: 20px !important;
-        text-transform: uppercase;
-        font-family: 'Inter', sans-serif !important;
-    }
-    
-    h2 {
-        color: #FFFFFF !important;
-        font-weight: 600 !important;
-        font-size: 1.6rem !important;
-        letter-spacing: -0.01em !important;
-        border-left: 4px solid #2E7DD8;
-        padding-left: 16px;
-        margin-top: 24px !important;
-        text-transform: uppercase;
-        font-family: 'Inter', sans-serif !important;
-    }
-    
-    h3 {
-        color: #D4D4D4 !important;
-        font-weight: 500 !important;
-        font-size: 1.2rem !important;
-        text-transform: uppercase;
-        letter-spacing: 0.05em !important;
-        font-family: 'Inter', sans-serif !important;
-    }
-    
-    /* Métricas - Estilo técnico con fuente monoespaciada para números */
-    [data-testid="stMetricValue"] {
-        font-size: 2.5rem !important;
-        font-weight: 700 !important;
-        color: #2E7DD8 !important;
-        font-family: 'JetBrains Mono', monospace !important;
-        text-shadow: 0 0 10px rgba(46, 125, 216, 0.3);
-    }
-    
-    [data-testid="stMetricLabel"] {
-        color: #8B8B8B !important;
-        font-size: 0.75rem !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.1em !important;
-        font-weight: 500 !important;
-    }
-    
-    [data-testid="stMetricDelta"] {
-        font-family: 'JetBrains Mono', monospace !important;
-        font-size: 0.9rem !important;
-    }
-    
-    /* Botones - Diseño técnico angular */
-    .stButton>button {
-        background: linear-gradient(135deg, #1A4D8F 0%, #2E7DD8 100%);
-        color: #FFFFFF;
-        font-weight: 600;
-        border: 1px solid #2E7DD8;
-        border-radius: 2px;
-        padding: 10px 24px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-size: 0.85rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 0 15px rgba(46, 125, 216, 0.2);
-    }
-    
-    .stButton>button:hover {
-        background: linear-gradient(135deg, #2E7DD8 0%, #4A9EFF 100%);
-        box-shadow: 0 0 25px rgba(46, 125, 216, 0.5);
-        border-color: #4A9EFF;
-    }
-    
-    /* Tablas - Estilo grid técnico */
-    .stDataFrame {
-        border: 1px solid #1A4D8F;
-        border-radius: 2px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.85rem;
-    }
-    
-    .stDataFrame thead tr th {
-        background-color: #1A1A1A !important;
-        color: #8B8B8B !important;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-size: 0.75rem;
-        border-bottom: 2px solid #1A4D8F !important;
-    }
-    
-    .stDataFrame tbody tr:hover {
-        background-color: #1A1A1A !important;
-    }
-    
-    /* Tabs - Navegación estilo Palantir */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 2px;
-        background-color: #0D0D0D;
-        border-bottom: 1px solid #1A4D8F;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        background-color: transparent;
-        color: #8B8B8B;
-        border: none;
-        border-bottom: 2px solid transparent;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-size: 0.85rem;
-        padding: 12px 20px;
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background-color: transparent;
-        color: #2E7DD8;
-        border-bottom: 2px solid #2E7DD8;
-        font-weight: 600;
-    }
-    
-    /* Tarjetas personalizadas - Diseño técnico angular */
-    .metric-card {
-        background: linear-gradient(135deg, #1A1A1A 0%, #0D0D0D 100%);
-        padding: 20px;
-        border-radius: 2px;
-        border: 1px solid #1A4D8F;
-        margin: 10px 0;
-        box-shadow: 0 0 20px rgba(26, 77, 143, 0.1);
-        transition: all 0.3s ease;
-    }
-    
-    .metric-card:hover {
-        border-color: #2E7DD8;
-        box-shadow: 0 0 30px rgba(46, 125, 216, 0.2);
-    }
-    
-    .metric-title {
-        color: #8B8B8B;
-        font-size: 0.75rem;
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        font-weight: 500;
-    }
-    
-    .metric-value {
-        color: #FFFFFF;
-        font-size: 2.2rem;
-        font-weight: 700;
-        font-family: 'JetBrains Mono', monospace;
-    }
-    
-    /* Badges de estado - Estilo minimalista técnico */
-    .status-badge-critico {
-        background-color: transparent;
-        color: #FF4757;
-        border: 1px solid #FF4757;
-        padding: 4px 12px;
-        border-radius: 2px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    
-    .status-badge-live {
-        background-color: transparent;
-        color: #2E7DD8;
-        border: 1px solid #2E7DD8;
-        padding: 4px 12px;
-        border-radius: 2px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        animation: pulse 2s infinite;
-    }
-    
-    .status-badge-warning {
-        background-color: transparent;
-        color: #FFA502;
-        border: 1px solid #FFA502;
-        padding: 4px 12px;
-        border-radius: 2px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    
-    /* Animación pulse para elementos LIVE */
-    @keyframes pulse {
-        0%, 100% {
-            box-shadow: 0 0 5px rgba(46, 125, 216, 0.5);
-        }
-        50% {
-            box-shadow: 0 0 15px rgba(46, 125, 216, 0.8);
-        }
-    }
-    
-    /* Expanders - Estilo técnico colapsable */
-    .streamlit-expanderHeader {
-        background-color: #1A1A1A;
-        border: 1px solid #1A4D8F;
-        border-radius: 2px;
-        color: #D4D4D4 !important;
-        font-weight: 500;
-        text-transform: uppercase;
-        font-size: 0.85rem;
-        letter-spacing: 0.05em;
-    }
-    
-    .streamlit-expanderHeader:hover {
-        background-color: #222222;
-        border-color: #2E7DD8;
-    }
-    
-    /* Alertas y mensajes */
-    .stAlert {
-        background-color: #1A1A1A;
-        border-left: 4px solid;
-        border-radius: 2px;
-        padding: 16px;
-        font-family: 'Inter', sans-serif;
-    }
-    
-    /* Info */
-    [data-baseweb="notification"] [data-testid="stMarkdownContainer"] p {
-        font-size: 0.9rem;
-    }
-    
-    /* Scrollbar personalizado */
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: #0D0D0D;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: #1A4D8F;
-        border-radius: 2px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-        background: #2E7DD8;
-    }
-    
-    /* Inputs y selectbox - Estilo técnico */
-    .stTextInput>div>div>input,
-    .stSelectbox>div>div>div,
-    .stNumberInput>div>div>input {
-        background-color: #1A1A1A;
-        border: 1px solid #1A4D8F;
-        border-radius: 2px;
-        color: #E8E8E8;
-        font-family: 'JetBrains Mono', monospace;
-    }
-    
-    .stTextInput>div>div>input:focus,
-    .stSelectbox>div>div>div:focus,
-    .stNumberInput>div>div>input:focus {
-        border-color: #2E7DD8;
-        box-shadow: 0 0 10px rgba(46, 125, 216, 0.3);
-    }
-    
-    /* Marca de agua Palantir-style */
-    .palantir-watermark {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        color: #1A4D8F;
-        font-size: 0.7rem;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.2em;
-        opacity: 0.3;
-        font-family: 'Inter', sans-serif;
-    }
-</style>
-""", unsafe_allow_html=True)
+
 
 # --- FUNCIONES VISUALES (Mapas y Gráficos) ---
 def generar_mapa_riesgo(escenario):
@@ -1276,7 +656,7 @@ df = cargar_inventario()
 
 # Sidebar con menú de navegación
 with st.sidebar:
-    # Header estilo Palantir con logo y nombre
+
     st.markdown("""
     <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #1A4D8F;">
         <div style="font-size: 2rem; color: #2E7DD8; font-weight: 700; font-family: 'Inter', sans-serif;">
@@ -1291,7 +671,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
     
-    # Sistema de tiempo estilo Palantir
+
     ultima_actualizacion = info_escenarios[list(info_escenarios.keys())[0]].get('ultima_actualizacion', datetime.now().strftime('%Y-%m-%d %H:%M'))
     st.markdown(f"""
     <div style="padding: 16px 0; border-bottom: 1px solid #1A4D8F;">
@@ -1461,44 +841,62 @@ with st.sidebar:
                     unsafe_allow_html=True
                 )
     
-    # Botón para forzar actualización inmediata - Estilo Palantir
+
     if st.button("⟳ FORCE REFRESH", key="force_refresh"):
         st.cache_data.clear()
         st.rerun()
 
-# Header principal estilo Palantir
+
+# Header moderno tipo dashboard
 st.markdown("""
-<div style="margin-bottom: 30px;">
-    <div style="border-bottom: 2px solid #1A4D8F; padding-bottom: 20px;">
-        <h1 style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #FFFFFF; text-transform: uppercase; letter-spacing: 0.05em;">
-            ⬡ CEREBRO DE ACERO
-        </h1>
-        <div style="margin-top: 8px; font-size: 0.9rem; color: #8B8B8B; text-transform: uppercase; letter-spacing: 0.1em;">
-            INTELLIGENCE PLATFORM • EXECUTIVE DASHBOARD
-        </div>
+<div style="display: flex; align-items: center; justify-content: space-between; background: #f7fafd; border-bottom: 2px solid #e0e7ef; padding: 12px 24px 8px 24px; margin-bottom: 18px;">
+    <div style="display: flex; align-items: center; gap: 18px;">
+        <span style="font-size: 2rem; color: #1976d2;">🏠</span>
+        <span style="font-size: 1.2rem; color: #222; font-weight: 700; letter-spacing: 0.04em;">HOME</span>
+        <span style="font-size: 1.2rem; color: #888; font-weight: 500; margin-left: 24px;">|</span>
+        <span style="font-size: 1.2rem; color: #1976d2; font-weight: 700; margin-left: 8px;">EXPLORE</span>
+        <span style="font-size: 1.2rem; color: #888; font-weight: 500; margin-left: 24px;">|</span>
+        <span style="font-size: 1.2rem; color: #1976d2; font-weight: 700; margin-left: 8px;">SALES INSIGHTS</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 18px;">
+        <span style="font-size: 1.6rem; color: #1976d2;">🔔</span>
+        <span style="font-size: 1.6rem; color: #1976d2;">👤</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# Marca de agua Palantir
+# GRID PRINCIPAL DE DASHBOARD
 st.markdown("""
-<div class="palantir-watermark">
-    CEREBRO DE ACERO © 2026
-</div>
+<style>
+.dashboard-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.07);
+    padding: 18px 18px 10px 18px;
+    margin-bottom: 18px;
+    border: 1px solid #e0e7ef;
+}
+.dashboard-title {
+    font-size: 1.1rem;
+    color: #1976d2;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+</style>
 """, unsafe_allow_html=True)
+
+
 
 # =============================================
 # RESUMEN EJECUTIVO DEL DÍA
 # =============================================
 def generar_resumen_ejecutivo():
     """Genera un resumen ejecutivo con toda la información clave"""
-    
-    # Obtener datos de proveedores y precios
+    from datetime import datetime
     try:
         from calculadora_cfr import obtener_productos_cfr_lo_principal, obtener_tipo_cambio_usd_cny
         from akshare_china import obtener_precio_acero_shanghai, convertir_cny_a_usd
         from monitor_fletes import analizar_tendencia_fletes
-        
         productos_cfr, tipo_cambio = obtener_productos_cfr_lo_principal()
         precios_shanghai = obtener_precio_acero_shanghai()
         tendencia_fletes = analizar_tendencia_fletes()
@@ -1507,20 +905,19 @@ def generar_resumen_ejecutivo():
         tipo_cambio = 7.25
         precios_shanghai = {}
         tendencia_fletes = {"tendencia": "ESTABLE", "variacion_pct": 0}
-    
     # Contar alertas activas
     alertas_crisis = [e for e in escenarios_disponibles if "Crisis" in info_escenarios.get(e, {}).get("tipo", "")]
     alertas_oportunidad = [e for e in escenarios_disponibles if "Oportunidad" in info_escenarios.get(e, {}).get("tipo", "")]
-    
     # Precio más bajo CFR
-    mejor_precio = min(productos_cfr, key=lambda x: x["cfr_lo"]) if productos_cfr else {"proveedor": "N/A", "cfr_lo": 0, "producto": "N/A"}
-    
+    if productos_cfr:
+        mejor_precio = min(productos_cfr, key=lambda x: x["cfr_lo"])
+    else:
+        mejor_precio = {"proveedor": "N/A", "cfr_lo": 0, "producto": "N/A"}
     # Obtener precio HRC en USD
     try:
         hrc_usd = convertir_cny_a_usd(precios_shanghai.get("hrc", {}).get("precio", 4200), tipo_cambio)
     except:
         hrc_usd = 480
-    
     return {
         "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"),
         "alertas_crisis": len(alertas_crisis),
@@ -1536,6 +933,8 @@ def generar_resumen_ejecutivo():
         "escenarios_crisis": alertas_crisis[:3],
         "escenarios_oportunidad": alertas_oportunidad[:3]
     }
+
+
 
 # Mostrar Resumen Ejecutivo
 with st.container():
@@ -1975,7 +1374,7 @@ if st.button("🚀 EJECUTAR CEREBRO COMPLETO", type="primary", use_container_wid
 
 
 # =============================================
-# SECCIÓN PALANTIR - INTELLIGENCE WORKSPACE
+
 # =============================================
 st.markdown("---")
 st.markdown("---")
@@ -1984,7 +1383,7 @@ st.markdown("""
 <div style="margin-bottom: 30px;">
     <div style="border-bottom: 2px solid #1A4D8F; padding-bottom: 20px;">
         <h1 style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #FFFFFF; text-transform: uppercase; letter-spacing: 0.05em;">
-            ⬡ PALANTIR INTELLIGENCE WORKSPACE
+            
         </h1>
         <div style="margin-top: 8px; font-size: 0.9rem; color: #8B8B8B; text-transform: uppercase; letter-spacing: 0.1em;">
             ONTOLOGY • TIMELINE • GEOSPATIAL ANALYSIS
@@ -2333,143 +1732,52 @@ except Exception as e:
 
 
 # =============================================
-# SECCIÓN DE BI E INTELIGENCIA ARTIFICIAL
-# =============================================
 st.markdown("---")
-st.markdown("---")
-st.markdown("# 🤖 Business Intelligence e Inteligencia Artificial")
+st.markdown("# 🤖 Business Intelligence e Inteligencia Artificial Integrada")
 
-# Inicializar sistemas de IA
+# Inicializar sistemas de IA y BI directamente en la vista principal
 try:
-    # Instanciar sistema de IA
     sistema_ia = SistemaIA(db)
-    
-    # Crear tabs para diferentes funcionalidades
-    tab_dashboard, tab_alertas, tab_optimizer, tab_simulador = st.tabs([
-        "📊 Dashboard BI", 
-        "🚨 Alertas Inteligentes", 
-        "🎯 Optimizador", 
-        "🔮 Simulador"
-    ])
-    
-    # TAB 1: DASHBOARD BI
-    with tab_dashboard:
-        st.markdown("## 📊 Dashboard de Business Intelligence")
-        st.info("📈 Análisis histórico de decisiones, rendimiento de proveedores y KPIs clave")
-        
-        # Inicializar dashboard
-        dashboard = BIDashboard(db)
-        
-        # Botón para generar datos demo (si no existen)
-        if st.button("🎲 Generar Datos de Demostración"):
-            with st.spinner("Generando datos históricos de demostración..."):
-                db.generar_datos_iniciales_demo()
-                st.success("✅ Datos generados correctamente. Refresca la página.")
-                st.rerun()
-        
-        # Mostrar dashboard completo
-        dashboard.mostrar_dashboard_completo()
-    
-    # TAB 2: ALERTAS INTELIGENTES
-    with tab_alertas:
-        st.markdown("## 🚨 Sistema de Alertas Inteligentes")
-        st.info("⚡ Alertas automáticas basadas en análisis de tendencias y datos históricos")
-        
-        # Crear sistema de alertas
-        sistema_alertas = SistemaAlertas(db, sistema_ia)
-        
-        # Generar y mostrar alertas
-        with st.spinner("Analizando datos y generando alertas..."):
-            alertas = sistema_alertas.generar_alertas()
-        
-        # Mostrar resumen de alertas
-        resumen_alertas = sistema_alertas.obtener_resumen_alertas()
-        
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Total Alertas", resumen_alertas['total'])
-        with col2:
-            st.metric("Críticas", resumen_alertas['criticas'])
-        with col3:
-            st.metric("Altas", resumen_alertas['altas'])
-        with col4:
-            st.metric("Medias", resumen_alertas['medias'])
-        
-        st.markdown("---")
-        
-        # Mostrar alertas
-        sistema_alertas.mostrar_alertas()
-    
-    # TAB 3: OPTIMIZADOR
-    with tab_optimizer:
-        st.markdown("## 🎯 Herramientas de Optimización")
-        
-        subtab1, subtab2 = st.tabs(["🏭 Optimizador de Proveedores", "📊 Calculadora Punto de Reorden"])
-        
-        with subtab1:
-            st.markdown("### Optimización de Cartera de Proveedores")
-            st.info("💡 Diversificación inteligente de proveedores para minimizar riesgo")
+    dashboard = BIDashboard(db)
+    sistema_alertas = SistemaAlertas(db, sistema_ia)
+    optimizador = OptimizadorProveedores(db)
+    calculadora = CalculadoraPuntoReorden(db, sistema_ia)
+    simulador = SimuladorEscenarios(db)
+
+    # KPIs y métricas principales
+    st.markdown("## 📊 KPIs y Métricas Clave")
+    dashboard.mostrar_kpis_principales()
+    st.markdown("---")
+
+    # Alertas inteligentes
+    st.markdown("## 🚨 Alertas Inteligentes")
+    resumen_alertas = sistema_alertas.obtener_resumen_alertas()
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Alertas", resumen_alertas['total'])
+    with col2:
+        st.metric("Críticas", resumen_alertas['criticas'])
+    with col3:
+        st.metric("Altas", resumen_alertas['altas'])
+    with col4:
+        st.metric("Medias", resumen_alertas['medias'])
+    sistema_alertas.mostrar_alertas()
+    st.markdown("---")
+
+    # Optimización y calculadora
+    st.markdown("## 🎯 Optimización de Proveedores y Punto de Reorden")
+    optimizador.mostrar_optimizacion()
+    calculadora.mostrar_calculadora()
+    st.markdown("---")
+
+    # Simulador de escenarios
+    st.markdown("## 🔮 Simulador de Escenarios What-If")
+    simulador.mostrar_simulador()
+
+except Exception as e:
+    st.error(f"❌ Error al inicializar BI/IA: {str(e)}")
+    st.info("💡 Algunas funcionalidades de BI requieren instalar dependencias adicionales")
             
-            optimizador = OptimizadorProveedores(db)
-            optimizador.mostrar_optimizacion()
-        
-        with subtab2:
-            st.markdown("### Calculadora de Punto de Reorden")
-            st.info("📐 Cálculo automático de cuándo realizar pedidos basado en demanda predictiva")
-            
-            calculadora = CalculadoraPuntoReorden(db, sistema_ia)
-            calculadora.mostrar_calculadora()
-    
-    # TAB 4: SIMULADOR
-    with tab_simulador:
-        st.markdown("## 🔮 Simulador de Escenarios What-If")
-        st.info("🎬 Simula diferentes escenarios y analiza su impacto en el negocio")
-        
-        simulador = SimuladorEscenarios(db)
-        simulador.mostrar_simulador()
-        
-        # Sección de predicciones de IA
-        st.markdown("---")
-        st.markdown("### 🤖 Predicciones del Sistema de IA")
-        
-        col_pred1, col_pred2 = st.columns(2)
-        
-        with col_pred1:
-            st.markdown("#### 📈 Predicción de Precios (30 días)")
-            try:
-                tendencia, cambio = sistema_ia.predictor_precios.analizar_tendencia()
-                
-                if tendencia == "SUBIENDO":
-                    st.error(f"🔴 Precio del acero subirá ~{cambio:.1f}% en 30 días")
-                    st.write("**Recomendación:** Comprar ahora antes de la subida")
-                elif tendencia == "BAJANDO":
-                    st.success(f"🟢 Precio del acero bajará ~{abs(cambio):.1f}% en 30 días")
-                    st.write("**Recomendación:** Esperar para mejores precios")
-                else:
-                    st.info(f"🟡 Precio del acero se mantendrá estable (~{cambio:.1f}%)")
-                    st.write("**Recomendación:** Comprar según necesidad normal")
-            except Exception as e:
-                st.warning("⚠️ Predicción de precios requiere datos históricos")
-        
-        with col_pred2:
-            st.markdown("#### 🎯 Predicción de Demanda")
-            
-            producto_demo = st.selectbox(
-                "Selecciona producto",
-                ['Varilla 12mm', 'Viga IPE 200', 'Plancha LAC 2mm'],
-                key="pred_demanda"
-            )
-            
-            if st.button("Predecir Demanda"):
-                try:
-                    pred = sistema_ia.predictor_demanda.predecir_demanda_producto(producto_demo)
-                    
-                    st.metric("Demanda Promedio Diaria", f"{pred['demanda_promedio_diaria']:.0f} unidades")
-                    st.metric("Demanda Próximos 30 días", f"{pred['demanda_30dias']:.0f} unidades")
-                    
-                    st.write("**Recomendación:** Asegurar stock para cubrir esta demanda")
-                except Exception as e:
-                    st.warning("⚠️ Predicción requiere datos históricos de inventario")
 
 except Exception as e:
     st.error(f"❌ Error al inicializar sistema de BI: {str(e)}")
