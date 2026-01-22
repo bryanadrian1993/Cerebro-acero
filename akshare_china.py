@@ -51,8 +51,7 @@ def obtener_precio_acero_shanghai():
         # =============================================
         try:
             # Obtener datos de futuros de Rebar
-            df_rb = ak.futures_zh_spot(symbol="螺纹钢", market="上海期货交易所", indicator="日")
-            
+            df_rb = ak.futures_zh_spot(symbol="螺纹钢", market="上海期货交易所")
             if df_rb is not None and len(df_rb) > 0:
                 ultimo = df_rb.iloc[-1] if 'date' in df_rb.columns else df_rb.iloc[0]
                 resultado["rebar"] = {

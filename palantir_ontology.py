@@ -331,28 +331,23 @@ class SupplyChainOntology:
                 showlegend=False
             ))
         
-        # Crear nodes agrupados por tipo
-        for node_type in ['SUPPLIER', 'PRODUCT', 'ROUTE']:
+        # Crear nodes agrupados por tipo, pero solo mostrar nodos con al menos una conexión
+        for node_type in ['PRODUCT', 'ROUTE']:
             nodes_of_type = [n for n, d in self.graph.nodes(data=True) if d.get('type') == node_type]
-            
-            if not nodes_of_type:
+            # Filtrar nodos con al menos una conexión (entrante o saliente)
+            nodes_with_edges = [n for n in nodes_of_type if self.graph.degree(n) > 0]
+            if not nodes_with_edges:
                 continue
-            
-            node_x = [pos[node][0] for node in nodes_of_type]
-            node_y = [pos[node][1] for node in nodes_of_type]
+            node_x = [pos[node][0] for node in nodes_with_edges]
+            node_y = [pos[node][1] for node in nodes_with_edges]
             node_text = []
-            
-            for node in nodes_of_type:
+            for node in nodes_with_edges:
                 obj = self.objects[node]
-                if node_type == 'SUPPLIER':
-                    text = f"<b>{obj.properties['nombre']}</b><br>País: {obj.properties['pais']}<br>Calidad: {obj.properties['calificacion_calidad']}/10"
-                elif node_type == 'PRODUCT':
+                if node_type == 'PRODUCT':
                     text = f"<b>{obj.properties['nombre']}</b><br>Demanda: {obj.properties['demanda_mensual_promedio']} ton/mes"
                 else:
                     text = f"<b>{obj.properties['origen']} → {obj.properties['destino']}</b><br>Tiempo: {obj.properties['tiempo_transito_dias']} días"
-                
                 node_text.append(text)
-            
             node_trace.append(go.Scatter(
                 x=node_x,
                 y=node_y,
@@ -363,7 +358,7 @@ class SupplyChainOntology:
                     color=type_colors[node_type],
                     line=dict(width=2, color='#FFFFFF')
                 ),
-                text=[self.objects[n].properties.get('nombre', n)[:15] for n in nodes_of_type],
+                text=[self.objects[n].properties.get('nombre', n)[:15] for n in nodes_with_edges],
                 textposition="top center",
                 textfont=dict(size=8, color='#E8E8E8'),
                 hovertext=node_text,
@@ -374,13 +369,9 @@ class SupplyChainOntology:
         fig = go.Figure(data=edge_trace + node_trace)
         
         fig.update_layout(
-            title=dict(
-                text='SUPPLY CHAIN KNOWLEDGE GRAPH',
-                font=dict(size=16, color='#FFFFFF', family='Inter')
-            ),
             showlegend=True,
             hovermode='closest',
-            margin=dict(b=0, l=0, r=0, t=40),
+            margin=dict(b=0, l=0, r=0, t=0),
             paper_bgcolor='#0D0D0D',
             plot_bgcolor='#0D0D0D',
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),

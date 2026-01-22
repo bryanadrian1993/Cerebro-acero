@@ -182,8 +182,8 @@ def obtener_noticias_rss(max_noticias=20):
             
             time.sleep(0.5)  # Rate limiting cortés
             
-        except Exception as e:
-            print(f"Error RSS {feed_info['fuente']}: {e}")
+        except Exception:
+            # Error en el feed RSS, se ignora silenciosamente
             continue
     
     return noticias_detectadas[:max_noticias]

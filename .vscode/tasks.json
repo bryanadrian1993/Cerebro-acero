@@ -1,0 +1,214 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Streamlit app",
+			"type": "shell",
+			"command": "streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (venv)",
+			"type": "shell",
+			"command": "C:/Users/LENOVO/Documents/ROBOT IMPORT ACEROS/Demo_Import_Aceros - copia/.venv/bin/python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (bin/python.exe)",
+			"type": "shell",
+			"command": "c:\\Users\\LENOVO\\Documents\\ROBOT IMPORT ACEROS\\Demo_Import_Aceros - copia\\.venv\\bin\\python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python)",
+			"type": "shell",
+			"command": "python -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe)",
+			"type": "shell",
+			"command": "python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe)",
+			"type": "shell",
+			"command": "python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe)",
+			"type": "shell",
+			"command": "python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe)",
+			"type": "shell",
+			"command": "python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe)",
+			"type": "shell",
+			"command": "python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe)",
+			"type": "shell",
+			"command": "python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe, .venv_nuevo)",
+			"type": "shell",
+			"command": ".venv_nuevo\\Scripts\\python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe, .venv_nuevo)",
+			"type": "shell",
+			"command": ".venv_nuevo\\Scripts\\python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe, .venv_nuevo, force)",
+			"type": "shell",
+			"command": ".\\.venv_nuevo\\Scripts\\python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe, .venv_nuevo, final)",
+			"type": "shell",
+			"command": ".\\.venv_nuevo\\Scripts\\python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe, .venv_nuevo, yfinance)",
+			"type": "shell",
+			"command": ".\\.venv_nuevo\\Scripts\\python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe, .venv_nuevo, indent fixed)",
+			"type": "shell",
+			"command": ".\\.venv_nuevo\\Scripts\\python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe, .venv_nuevo, cache cleaned)",
+			"type": "shell",
+			"command": ".\\.venv_nuevo\\Scripts\\python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Restart Streamlit app (.venv_nuevo)",
+			"type": "shell",
+			"command": ".\\.venv_nuevo\\Scripts\\python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Streamlit app (python.exe, .venv_nuevo, cache cleaned, final)",
+			"type": "shell",
+			"command": ".\\.venv_nuevo\\Scripts\\python.exe -m streamlit run app.py",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		}
+	]
+}
