@@ -5,6 +5,7 @@ import random
 import time
 from datetime import datetime
 import plotly.graph_objects as go
+import plotly.express as px
 import os
 
 # ==============================================================================
@@ -21,6 +22,7 @@ try:
     from palantir_geospatial import create_geospatial_analysis
     from compras_publicas_ecuador import obtener_obras_detectadas_ecuador
     from apis_gratuitas import generar_dashboard_apis
+    from apis_ecuador import obtener_inflacion_anual_banco_mundial, obtener_ipco_historico_local
     from tushare_china import mostrar_precios_shanghai_sidebar
     from calculadora_cfr import (
         mostrar_cfr_sidebar, 
@@ -31,7 +33,7 @@ try:
     )
     from monitor_fletes import mostrar_fletes_sidebar, mostrar_panel_fletes, analizar_tendencia_fletes
     from sap_integration import mostrar_estado_sap_sidebar
-    from akshare_china import obtener_precio_acero_shanghai, convertir_cny_a_usd
+    # from akshare_china import obtener_precio_acero_shanghai, convertir_cny_a_usd
     from gdelt_news_api import obtener_noticias_rss
 except ImportError as e:
     st.error(f"Error fatal en la importación de módulos: {e}")
@@ -288,7 +290,8 @@ def ejecutar_cerebro_acero(escenario):
 
 # --- INTERFAZ GRÁFICA ---
 refresh_interval = 7200
-escenarios_disponibles, info_escenarios = generar_escenarios_desde_noticias()
+# escenarios_disponibles, info_escenarios = generar_escenarios_desde_noticias()
+escenarios_disponibles, info_escenarios = ["Operación Normal"], {"Operación Normal": {"tipo": "Normal", "descripcion": "Modo de diagnóstico."}}
 df = cargar_inventario()
 
 with st.sidebar:
@@ -305,19 +308,19 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("### 📊 Indicadores en Vivo")
-    try:
-        dashboard_apis = generar_dashboard_apis()
-        st.metric("💰 Índice Acero Global", f"${dashboard_apis['acero']['precio']:.0f}", f"{dashboard_apis['acero']['cambio_pct']:.1f}%", delta_color="inverse")
-        st.metric("💱 USD/CNY (China)", f"¥{dashboard_apis['forex']['CNY']:.2f}", "Hoy")
-        if dashboard_apis["clima"]: st.warning(f"🌪️ {len(dashboard_apis['clima'])} alerta(s) climáticas")
-        if dashboard_apis["desastres"]: st.error(f"🌍 {len(dashboard_apis['desastres'])} desastre(s) en zonas proveedores")
-    except Exception as e:
-        st.caption(f"⚠️ APIs básicas en standby: {e}")
+    # try:
+    #     dashboard_apis = generar_dashboard_apis()
+    #     st.metric("💰 Índice Acero Global", f"${dashboard_apis['acero']['precio']:.0f}", f"{dashboard_apis['acero']['cambio_pct']:.1f}%", delta_color="inverse")
+    #     st.metric("💱 USD/CNY (China)", f"¥{dashboard_apis['forex']['CNY']:.2f}", "Hoy")
+    #     if dashboard_apis["clima"]: st.warning(f"🌪️ {len(dashboard_apis['clima'])} alerta(s) climáticas")
+    #     if dashboard_apis["desastres"]: st.error(f"🌍 {len(dashboard_apis['desastres'])} desastre(s) en zonas proveedores")
+    # except Exception as e:
+    #     st.caption(f"⚠️ APIs básicas en standby: {e}")
     
     st.markdown("---")
-    mostrar_precios_shanghai_sidebar()
-    mostrar_cfr_sidebar()
-    mostrar_fletes_sidebar()
+    # mostrar_precios_shanghai_sidebar()
+    # mostrar_cfr_sidebar()
+    # mostrar_fletes_sidebar()
     mostrar_estado_sap_sidebar()
     
     num_alertas = len([e for e in escenarios_disponibles if e != "Sin Alertas Activas"])
@@ -388,7 +391,7 @@ if st.button("🚀 EJECUTAR CEREBRO COMPLETO", type="primary", use_container_wid
 # --- SECCIÓN PALANTIR ---
 st.markdown("---")
 st.markdown("## 🌐 CENTRO DE INTELIGENCIA")
-palantir_tabs = st.tabs(["🧠 Ontología", "⏱️ Línea Temporal", "🗺️ Geoespacial", "📊 BI y KPIs", "🚨 Alertas", "🧮 Optimizador"])
+palantir_tabs = st.tabs(["🧠 Ontología", "⏱️ Línea Temporal", "🗺️ Geoespacial", "📊 BI y KPIs", "🚨 Alertas", "🧮 Optimizador", "🇪🇨 Contexto Ecuador"])
 
 with palantir_tabs[0]:
     st.markdown("### Ontología de la Cadena de Suministro")
@@ -421,6 +424,28 @@ with palantir_tabs[5]:
     st.markdown("### Optimizador de Proveedores y Reorden")
     optimizador = OptimizadorProveedores(db)
     optimizador.mostrar_optimizacion()
+
+with palantir_tabs[6]:
+    st.markdown("### Indicadores Macroeconómicos de Ecuador")
+    inflacion_data = obtener_inflacion_anual_banco_mundial()
+    if not inflacion_data.empty:
+        st.markdown("#### Inflación Anual en Ecuador (%)")
+        fig = px.bar(inflacion_data, x='año', y='inflacion_pct', title='Inflación Anual en Ecuador (Fuente: Banco Mundial)')
+        st.plotly_chart(fig, use_container_width=True)
+        st.dataframe(inflacion_data.tail().style.format({'año': '{:}', 'inflacion_pct': '{:.2f}%'}))
+    else:
+        st.warning("No se pudieron cargar los datos de inflación del Banco Mundial.")
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    ipco_data = obtener_ipco_historico_local()
+    if not ipco_data.empty:
+        st.markdown("#### Índice de Precios de la Construcción (IPCO)")
+        fig_ipco = px.line(ipco_data, x='fecha', y='ipco_general', title='IPCO General Histórico (Fuente: INEC Local)')
+        st.plotly_chart(fig_ipco, use_container_width=True)
+    else:
+        st.warning("No se pudieron cargar los datos del IPCO desde la carpeta 'data_ipco'.")
+
 
 # Resto de la UI...
 # El código original es muy extenso, estos son los cambios fundamentales para que se ejecute.
