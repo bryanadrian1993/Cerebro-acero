@@ -22,7 +22,7 @@ try:
     from palantir_geospatial import create_geospatial_analysis
     from compras_publicas_ecuador import obtener_obras_detectadas_ecuador
     from apis_gratuitas import generar_dashboard_apis
-    from apis_ecuador import obtener_inflacion_anual_banco_mundial, obtener_ipco_historico_local
+    from apis_ecuador import obtener_inflacion_anual_banco_mundial, obtener_ipco_historico_local, get_ipi_metalmecanico_historico_ciiu
     from tushare_china import mostrar_precios_shanghai_sidebar
     from calculadora_cfr import (
         mostrar_cfr_sidebar, 
@@ -445,6 +445,16 @@ with palantir_tabs[6]:
         st.plotly_chart(fig_ipco, use_container_width=True)
     else:
         st.warning("No se pudieron cargar los datos del IPCO desde la carpeta 'data_ipco'.")
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    ipi_metalmecanico_data = get_ipi_metalmecanico_historico_ciiu()
+    if not ipi_metalmecanico_data.empty:
+        st.markdown("#### Índice de Producción Industrial (IPI) - Metalmecánico")
+        fig_ipi = px.line(ipi_metalmecanico_data, x='fecha', y='ipi_valor', color='descripcion', title='IPI Metalmecánico Histórico (Fuente: INEC)')
+        st.plotly_chart(fig_ipi, use_container_width=True)
+    else:
+        st.warning("No se pudieron cargar los datos del IPI-M metalmecánico.")
 
 
 # Resto de la UI...
