@@ -22,7 +22,7 @@ try:
     from palantir_geospatial import create_geospatial_analysis
     from compras_publicas_ecuador import obtener_obras_detectadas_ecuador
     from apis_gratuitas import generar_dashboard_apis
-    from apis_ecuador import obtener_inflacion_anual_banco_mundial, obtener_ipco_historico_local, get_ipi_metalmecanico_historico_ciiu
+    from apis_ecuador import obtener_inflacion_anual_banco_mundial, obtener_ipco_historico_local, get_ipi_metalmecanico_historico_ciiu, get_aeade_ventas_por_marca, get_aeade_ventas_por_combustible, get_aeade_ventas_motos
     from tushare_china import mostrar_precios_shanghai_sidebar
     from calculadora_cfr import (
         mostrar_cfr_sidebar, 
@@ -455,6 +455,44 @@ with palantir_tabs[6]:
         st.plotly_chart(fig_ipi, use_container_width=True)
     else:
         st.warning("No se pudieron cargar los datos del IPI-M metalmecánico.")
+    
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    st.markdown("### Ventas de Vehículos (AEADE)")
+    ventas_marca = get_aeade_ventas_por_marca()
+    if not ventas_marca.empty:
+        st.markdown("#### Ventas por Marca")
+        fig_marca = px.bar(ventas_marca.melt(id_vars='marca', var_name='periodo', value_name='ventas'),
+                           x='marca', y='ventas', color='periodo', barmode='group',
+                           title='Ventas de Vehículos por Marca (Dic 2024 vs Dic 2025)')
+        st.plotly_chart(fig_marca, use_container_width=True)
+        st.dataframe(ventas_marca)
+    else:
+        st.warning("No se pudieron cargar los datos de ventas por marca de AEADE.")
+
+    ventas_combustible = get_aeade_ventas_por_combustible()
+    if not ventas_combustible.empty:
+        st.markdown("#### Ventas por Tipo de Combustible")
+        fig_combustible = px.bar(ventas_combustible.melt(id_vars='tipo_combustible', var_name='periodo', value_name='ventas'),
+                                 x='tipo_combustible', y='ventas', color='periodo', barmode='group',
+                                 title='Ventas de Vehículos por Tipo de Combustible (Dic 2024 vs Dic 2025)')
+        st.plotly_chart(fig_combustible, use_container_width=True)
+        st.dataframe(ventas_combustible)
+    else:
+        st.warning("No se pudieron cargar los datos de ventas por tipo de combustible de AEADE.")
+    
+    ventas_motos = get_aeade_ventas_motos()
+    if not ventas_motos.empty:
+        st.markdown("#### Ventas de Motos por Marca")
+        fig_motos = px.bar(ventas_motos.melt(id_vars='marca_moto', var_name='periodo', value_name='ventas'),
+                           x='marca_moto', y='ventas', color='periodo', barmode='group',
+                           title='Ventas de Motos por Marca (Dic 2024 vs Dic 2025)')
+        st.plotly_chart(fig_motos, use_container_width=True)
+        st.dataframe(ventas_motos)
+    else:
+        st.warning("No se pudieron cargar los datos de ventas de motos de AEADE.")
+
+
 
 
 # Resto de la UI...
